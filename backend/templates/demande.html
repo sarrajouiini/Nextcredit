@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextCredit — Nouvelle Demande</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:       #152247;
+    --navy-light: #1e3060;
+    --sky:        #89B4E8;
+    --sky-light:  #c4d9f5;
+    --sky-dim:    #e8f1fb;
+    --white:      #ffffff;
+    --grey-50:    #f7f9fc;
+    --grey-100:   #edf1f7;
+    --grey-300:   #c6d0de;
+    --grey-600:   #6b7a96;
+    --success:    #0fa36e;
+    --success-bg: #e6f7f2;
+    --danger:     #d63b3b;
+    --danger-bg:  #fdf0f0;
+    --warn:       #e07b2a;
+    --warn-bg:    #fef4eb;
+    --fraud:      #b3261e;
+    --fraud-bg:   #fbeceb;
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  16px;
+    --shadow-sm:  0 1px 4px rgba(21,34,71,.08);
+    --shadow-md:  0 4px 16px rgba(21,34,71,.12);
+    --shadow-lg:  0 8px 32px rgba(21,34,71,.16);
+    --trans:      .2s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--grey-50);
+    color: var(--navy);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--navy);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo-badge {
+    width: 36px; height: 36px;
+    background: var(--sky);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--navy);
+    letter-spacing: -.5px;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -.3px;
+  }
+  header .subtitle {
+    font-size: 13px;
+    color: var(--sky-light);
+    margin-left: auto;
+    font-weight: 400;
+  }
+
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--grey-100);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--grey-100);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-header .icon {
+    width: 32px; height: 32px;
+    background: var(--sky-dim);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .card-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -.2px;
+  }
+  .card-body { padding: 24px; }
+
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--sky);
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--grey-100);
+  }
+  .section-label.fraud { color: var(--fraud); }
+
+  .form-section { margin-bottom: 28px; }
+  .form-section:last-child { margin-bottom: 0; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.cols-1 { grid-template-columns: 1fr; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.span-2 { grid-column: span 2; }
+  .field.span-3 { grid-column: span 3; }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--grey-600);
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+
+  input, select {
+    height: 40px;
+    padding: 0 12px;
+    border: 1.5px solid var(--grey-300);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--navy);
+    background: var(--white);
+    transition: border-color var(--trans), box-shadow var(--trans);
+    outline: none;
+    width: 100%;
+  }
+  input:focus, select:focus {
+    border-color: var(--sky);
+    box-shadow: 0 0 0 3px rgba(137,180,232,.18);
+  }
+  input::placeholder { color: var(--grey-300); }
+  select { cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7a96' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--grey-50);
+    border: 1.5px solid var(--grey-100);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--trans), background var(--trans);
+  }
+  .toggle-row:hover { border-color: var(--sky); background: var(--sky-dim); }
+  .toggle-label { font-size: 13px; font-weight: 500; color: var(--navy); }
+  .toggle-hint  { font-size: 11px; color: var(--grey-600); margin-top: 2px; }
+
+  .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0;
+    background: var(--grey-300);
+    border-radius: 24px;
+    transition: background var(--trans);
+    cursor: pointer;
+  }
+  .toggle-track::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform var(--trans);
+    box-shadow: var(--shadow-sm);
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--sky); }
+  .toggle-switch input:checked + .toggle-track::after { transform: translateX(20px); }
+
+  .ext-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .35s ease, opacity .25s ease, margin-top .2s ease;
+    opacity: 0;
+    margin-top: 0;
+  }
+  .ext-panel.open { max-height: 600px; opacity: 1; margin-top: 16px; }
+  .ext-panel-inner {
+    background: var(--sky-dim);
+    border: 1.5px solid var(--sky-light);
+    border-radius: var(--radius-md);
+    padding: 20px;
+  }
+
+  /* ── 2 BOUTONS D'ACTION ── */
+  .actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .btn-submit {
+    height: 48px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Syne', sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    cursor: pointer;
+    transition: box-shadow var(--trans), transform var(--trans);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: white;
+  }
+  .btn-submit.octroi { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%); }
+  .btn-submit.fraude { background: linear-gradient(135deg, var(--fraud) 0%, #8a1d17 100%); }
+  .btn-submit:hover { box-shadow: 0 6px 24px rgba(21,34,71,.35); transform: translateY(-1px); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RÉSULTATS (empilés) ── */
+  .result-col { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 88px; }
+
+  .result-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 36px 22px; gap: 10px; text-align: center;
+  }
+  .result-placeholder .icon-big { font-size: 34px; opacity: .25; }
+  .result-placeholder p { font-size: 12.5px; color: var(--grey-600); max-width: 200px; line-height: 1.5; }
+
+  .score-wrap { display: flex; flex-direction: column; align-items: center; padding: 24px 20px 16px; gap: 6px; }
+  .score-ring { position: relative; width: 104px; height: 104px; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring .ring-bg { fill: none; stroke: var(--grey-100); stroke-width: 8; }
+  .score-ring .ring-fill {
+    fill: none; stroke-width: 8; stroke-linecap: round;
+    stroke-dasharray: 295; stroke-dashoffset: 295;
+    transition: stroke-dashoffset .9s ease, stroke .4s ease;
+  }
+  .score-val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .score-number { font-family: 'Syne', sans-serif; font-size: 25px; font-weight: 800; color: var(--navy); line-height: 1; }
+  .score-max { font-size: 10px; color: var(--grey-600); font-weight: 500; }
+
+  .notation-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 13px; border-radius: 20px;
+    font-family: 'Syne', sans-serif; font-size: 13.5px; font-weight: 700;
+  }
+  .decision-banner {
+    width: 100%; margin: 0 20px; padding: 12px 18px;
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; gap: 9px;
+    font-family: 'Syne', sans-serif; font-size: 14.5px; font-weight: 800; letter-spacing: .4px;
+  }
+  .decision-banner.approuve { background: var(--success-bg); color: var(--success); }
+  .decision-banner.refuse   { background: var(--danger-bg);  color: var(--danger);  }
+  .decision-banner.revue    { background: #FFF4E0; color: #B8860B; }
+  .decision-banner.valide   { background: var(--success-bg); color: var(--success); }
+  .decision-banner.bloque   { background: var(--danger-bg);  color: var(--danger);  }
+
+  .kpi-list { padding: 14px 20px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .kpi-item { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--grey-50); border-radius: var(--radius-sm); border: 1px solid var(--grey-100); }
+  .kpi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .kpi-dot.ok   { background: var(--success); }
+  .kpi-dot.warn { background: var(--warn); }
+  .kpi-dot.attn { background: var(--danger); }
+  .kpi-name  { font-size: 11.5px; color: var(--grey-600); flex: 1; }
+  .kpi-value { font-size: 12px; font-weight: 600; color: var(--navy); }
+  .kpi-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 10px; text-transform: uppercase; letter-spacing: .4px; }
+  .kpi-badge.ok   { background: var(--success-bg); color: var(--success); }
+  .kpi-badge.warn { background: var(--warn-bg);    color: var(--warn);    }
+  .kpi-badge.attn { background: var(--danger-bg);  color: var(--danger);  }
+
+  .pd-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 20px; border-top: 1px solid var(--grey-100); font-size: 11.5px; color: var(--grey-600); }
+  .pd-row span:last-child { font-weight: 600; color: var(--navy); font-size: 12.5px; }
+
+  .motifs-box { margin: 0 20px 12px; padding: 12px 16px; background: #FFF4E0; border-left: 3px solid #E8A317; border-radius: var(--radius-sm); font-size: 12.5px; }
+  .motifs-box strong { color:#B8860B; display:block; margin-bottom:6px; }
+  .motifs-box ul { margin:0; padding-left:18px; color:var(--navy); line-height:1.7; }
+
+  .xai-box { margin: 0 20px 16px; padding: 14px 16px; background: var(--grey-50); border: 1px solid var(--grey-100); border-radius: var(--radius-md); }
+  .xai-box h4 { font-family:'Syne',sans-serif; font-size:11.5px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--sky); margin-bottom:8px; }
+  .xai-box.fraud h4 { color: var(--fraud); }
+  .xai-phrase { font-size:12px; color:var(--grey-600); line-height:1.6; margin-bottom:10px; font-style:italic; }
+
+  .facteur-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--grey-100); }
+  .facteur-row:last-child { border-bottom: none; }
+  .rank-num { width: 18px; height: 18px; border-radius: 50%; background: var(--fraud); color: var(--white); font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .facteur-name { font-size: 12px; font-weight: 600; color: var(--navy); }
+  .facteur-meta { font-size: 10.5px; color: var(--grey-600); margin-top: 2px; }
+  .impact-bar-track { height: 4px; border-radius: 2px; background: var(--grey-100); margin-top: 4px; overflow: hidden; }
+  .impact-bar-fill { height: 4px; border-radius: 2px; background: var(--fraud); transition: width .8s ease; }
+
+  .seg-bar-track { height: 6px; border-radius: 3px; background: var(--grey-100); position: relative; margin: 0 20px 4px; }
+  .seg-bar-fill { position: absolute; left: 0; top: 0; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #0fa36e 0%, #e07b2a 55%, #d63b3b 85%); width: 100%; }
+  .seg-bar-cursor { position: absolute; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--white); border: 3px solid var(--fraud); transform: translateX(-50%); transition: left 1s ease; }
+  .seg-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--grey-600); margin: 0 20px 14px; }
+
+  @media (max-width: 860px) {
+    .page { grid-template-columns: 1fr; }
+    .result-col { position: static; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+    .field.span-2, .field.span-3 { grid-column: span 1; }
+    .actions-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">NC</div>
+  <h1>NextCredit</h1>
+  <span class="subtitle">Nouvelle Demande · Octroi &amp; Détection Fraude</span>
+</header>
+
+<div class="page">
+
+  <!-- ══ COLONNE GAUCHE : FORMULAIRE UNIQUE ══ -->
+  <div>
+
+    <!-- SECTION 1 : Identité -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">👤</div>
+        <h2>Profil Personnel</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="form-section">
+          <div class="section-label">Identité</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Genre</label>
+              <select id="Genre">
+                <option value="">— Sélectionner —</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Âge (années)</label>
+              <input type="number" id="Age" placeholder="Ex : 35" min="18" max="100">
+            </div>
+            <div class="field">
+              <label>Situation familiale</label>
+              <select id="Situation_Familiale">
+                <option value="">— Sélectionner —</option>
+                <option value="Célibataire">Célibataire</option>
+                <option value="Marié(e)">Marié(e)</option>
+                <option value="Union libre">Union libre</option>
+                <option value="Veuf / Veuve">Veuf / Veuve</option>
+                <option value="Séparé(e)">Séparé(e)</option>
+                <option value="Non renseigné">Non renseigné</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Nombre de membres de la famille</label>
+              <input type="number" id="Nb_Membres_Famille" placeholder="Ex : 3" min="1" max="20">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-label">Enfants &amp; Patrimoine</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Possède des enfants à charge ?</label>
+              <select id="Flag_Enfants" onchange="toggleEnfants()">
+                <option value="Non">Non</option>
+                <option value="Oui">Oui</option>
+              </select>
+            </div>
+            <div class="field" id="field_nb_enfants" style="display:none">
+              <label>Nombre d'enfants</label>
+              <input type="number" id="Nb_Enfants" placeholder="Ex : 2" min="1" max="15" value="0">
+            </div>
+            <div class="field">
+              <label>Possède une voiture ?</label>
+              <select id="Flag_Voiture">
+                <option value="Non">Non</option>
+                <option value="Oui">Oui</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 2 : Emploi & Revenus -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">💼</div>
+        <h2>Emploi &amp; Revenus</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="form-section">
+          <div class="section-label">Situation professionnelle</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Type de revenu</label>
+              <select id="Type_Revenu">
+                <option value="">— Sélectionner —</option>
+                <option value="Salarié(e)">Salarié(e)</option>
+                <option value="Fonctionnaire">Fonctionnaire</option>
+                <option value="Associé(e) commercial(e)">Associé(e) commercial(e)</option>
+                <option value="Retraité(e)">Retraité(e)</option>
+                <option value="Sans emploi">Sans emploi</option>
+                <option value="Étudiant(e)">Étudiant(e)</option>
+                <option value="Chef d'entreprise">Chef d'entreprise</option>
+                <option value="En congé maternité">En congé maternité</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Profession / Poste occupé</label>
+              <select id="Profession">
+                <option value="">— Sélectionner —</option>
+                <option value="Ouvrier / Manœuvre">Ouvrier / Manœuvre</option>
+                <option value="Personnel de base">Personnel de base (Core staff)</option>
+                <option value="Comptable">Comptable</option>
+                <option value="Cadre / Manager">Cadre / Manager</option>
+                <option value="Chauffeur">Chauffeur</option>
+                <option value="Commercial / Vendeur">Commercial / Vendeur</option>
+                <option value="Agent d'entretien">Agent d'entretien / Nettoyage</option>
+                <option value="Cuisinier(ère)">Cuisinier(ère)</option>
+                <option value="Service privé à domicile">Service privé à domicile</option>
+                <option value="Personnel médical">Personnel médical / Santé</option>
+                <option value="Agent de sécurité">Agent de sécurité</option>
+                <option value="Technicien hautement qualifié">Technicien hautement qualifié</option>
+                <option value="Serveur / Barman">Serveur / Barman</option>
+                <option value="Ouvrier peu qualifié">Ouvrier peu qualifié</option>
+                <option value="Agent immobilier">Agent immobilier</option>
+                <option value="Secrétaire / Assistante">Secrétaire / Assistante</option>
+                <option value="Informaticien(ne)">Informaticien(ne) / IT</option>
+                <option value="Chargé(e) des ressources humaines">Chargé(e) RH</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Niveau d'éducation</label>
+              <select id="Niveau_Education">
+                <option value="">— Sélectionner —</option>
+                <option value="Études secondaires">Études secondaires</option>
+                <option value="Enseignement supérieur">Enseignement supérieur</option>
+                <option value="Formation incomplète">Formation supérieure incomplète</option>
+                <option value="Études inférieures">Études inférieures</option>
+                <option value="Formation académique">Formation académique</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Revenu mensuel (salaire) — DT</label>
+              <input type="number" id="Revenu_Total" placeholder="Ex : 2500" min="0">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 3 : Demande de crédit -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">🏦</div>
+        <h2>Demande de Crédit</h2>
+      </div>
+      <div class="card-body">
+
+        <div class="form-section">
+          <div class="section-label">Caractéristiques du crédit demandé</div>
+          <div class="form-grid cols-3">
+            <div class="field">
+              <label>Type de contrat</label>
+              <select id="Type_Contrat">
+                <option value="">— Sélectionner —</option>
+                <option value="Prêt en espèces">Prêt en espèces</option>
+                <option value="Prêt consommation">Prêt consommation</option>
+                <option value="Prêt revolving">Prêt revolving</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Type de client</label>
+              <select id="Type_Client">
+                <option value="">— Sélectionner —</option>
+                <option value="Nouveau client">Nouveau client</option>
+                <option value="Client régulier">Client régulier</option>
+                <option value="Client renouvelé">Client renouvelé</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Type de logement</label>
+              <select id="Type_Logement">
+                <option value="">— Sélectionner —</option>
+                <option value="Propriétaire">Propriétaire</option>
+                <option value="Appartement loué">Appartement loué</option>
+                <option value="Avec les parents">Avec les parents</option>
+                <option value="Logement municipal">Logement municipal</option>
+                <option value="Bureau / logement de fonction">Logement de fonction</option>
+                <option value="Logement en copropriété">Copropriété</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Montant du crédit — DT</label>
+              <input type="number" id="Montant_Credit" placeholder="Ex : 50000" min="0">
+            </div>
+            <div class="field">
+              <label>Mensualité — DT</label>
+              <input type="number" id="Mensualite" placeholder="Ex : 850" min="0">
+            </div>
+            <div class="field">
+              <label>Prix du bien financé — DT</label>
+              <input type="number" id="Prix_Bien" placeholder="Ex : 60000" min="0">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 4 : Crédit externe -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">🔗</div>
+        <h2>Historique Crédit Externe</h2>
+      </div>
+      <div class="card-body">
+
+        <label class="toggle-row" for="toggle_ext">
+          <div>
+            <div class="toggle-label">Le client possède un crédit externe en cours ?</div>
+            <div class="toggle-hint">Si oui, renseignez les détails ci-dessous</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle_ext" onchange="toggleExtCredit()">
+            <span class="toggle-track"></span>
+          </label>
+        </label>
+
+        <div class="ext-panel" id="ext_panel">
+          <div class="ext-panel-inner">
+            <div class="section-label" style="margin-bottom:14px">Détails du crédit externe</div>
+            <div class="form-grid cols-2">
+              <div class="field">
+                <label>Montant du crédit externe — DT</label>
+                <input type="number" id="AMT_CREDIT_EXT" placeholder="Ex : 15000" min="0">
+              </div>
+              <div class="field">
+                <label>Mensualité externe — DT</label>
+                <input type="number" id="AMT_ANNUITY_EXT" placeholder="Ex : 320" min="0">
+              </div>
+              <div class="field">
+                <label>Nombre d'échéances restantes</label>
+                <input type="number" id="CNT_PAYMENT_EXT" placeholder="Ex : 24" min="0" max="360">
+              </div>
+              <div class="field">
+                <label>Date de début du contrat externe</label>
+                <input type="date" id="DAYS_CREDIT_EXT">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SECTION 5 : Scores bureau -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">📊</div>
+        <h2>Scores Bureau de Crédit</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="section-label">Évaluations externes (0–900)</div>
+          <div class="form-grid cols-3">
+            <div class="field">
+              <label>Score bureau 1</label>
+              <input type="number" id="Score_Externe_1" placeholder="Ex : 650" min="0" max="900">
+            </div>
+            <div class="field">
+              <label>Score bureau 2</label>
+              <input type="number" id="Score_Externe_2" placeholder="Ex : 620" min="0" max="900">
+            </div>
+            <div class="field">
+              <label>Score bureau 3</label>
+              <input type="number" id="Score_Externe_3" placeholder="Ex : 670" min="0" max="900">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6 : Cohérence géographique (fraude uniquement) -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="icon">📍</div>
+        <h2>Cohérence Géographique <span style="font-size:11px;font-weight:400;color:var(--grey-600);margin-left:6px;">— utilisée pour la détection fraude</span></h2>
+      </div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="section-label fraud">0 = cohérent, 1 = incohérence détectée</div>
+          <div class="form-grid cols-3">
+            <div class="field">
+              <label>Ville enreg. ≠ résidence</label>
+              <select id="Ville_Enreg_Diff_Residence"><option value="0">0 — cohérent</option><option value="1">1 — incohérent</option></select>
+            </div>
+            <div class="field">
+              <label>Ville enreg. ≠ travail</label>
+              <select id="Ville_Enreg_Diff_Travail"><option value="0">0 — cohérent</option><option value="1">1 — incohérent</option></select>
+            </div>
+            <div class="field">
+              <label>Région enreg. ≠ résidence</label>
+              <select id="Region_Enreg_Diff_Residence"><option value="0">0 — cohérent</option><option value="1">1 — incohérent</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ LES 2 BOUTONS D'ACTION ══ -->
+    <div class="actions-row">
+      <button class="btn-submit octroi" id="btn_octroi" onclick="predictOctroi()">
+        <span class="spinner" id="spinner_octroi"></span>
+        <span id="btn_label_octroi">⚡ Calculer le Score de Risque</span>
+      </button>
+      <button class="btn-submit fraude" id="btn_fraude" onclick="predictFraude()">
+        <span class="spinner" id="spinner_fraude"></span>
+        <span id="btn_label_fraude">🔍 Vérifier le Risque Fraude</span>
+      </button>
+    </div>
+
+  </div><!-- /colonne gauche -->
+
+  <!-- ══ COLONNE DROITE : 2 RÉSULTATS EMPILÉS ══ -->
+  <div class="result-col">
+
+    <!-- ── Résultat OCTROI ── -->
+    <div class="card" id="card_octroi">
+      <div class="card-header"><div class="icon">⚡</div><h2>Décision d'Octroi</h2></div>
+
+      <div class="result-placeholder" id="octroi_empty">
+        <div class="icon-big">🔍</div>
+        <p>Complétez le formulaire et cliquez sur <strong>Calculer</strong> pour obtenir le score de risque.</p>
+      </div>
+
+      <div id="octroi_content" style="display:none">
+        <div class="score-wrap">
+          <div class="score-ring">
+            <svg viewBox="0 0 104 104" width="104" height="104">
+              <circle class="ring-bg"   cx="52" cy="52" r="47"/>
+              <circle class="ring-fill" cx="52" cy="52" r="47" id="o_ring_fill"/>
+            </svg>
+            <div class="score-val">
+              <span class="score-number" id="o_score">—</span>
+              <span class="score-max">/1000</span>
+            </div>
+          </div>
+          <div class="notation-badge" id="o_notation_badge">—</div>
+          <div style="font-size:11.5px;color:var(--grey-600);text-align:center" id="o_label">—</div>
+        </div>
+
+        <div style="padding:0 20px 16px">
+          <div class="decision-banner" id="o_decision_banner">
+            <span id="o_decision_icon">—</span>
+            <span id="o_decision_text">—</span>
+          </div>
+        </div>
+
+        <div class="motifs-box" id="o_motifs_box" style="display:none">
+          <strong>⚠ Motifs</strong>
+          <ul id="o_motifs_list"></ul>
+        </div>
+
+        <div class="xai-box" id="o_xai_box" style="display:none">
+          <h4>💡 Pourquoi cette décision ?</h4>
+          <div class="xai-phrase" id="o_xai_phrase">Calcul en cours…</div>
+          <div id="o_xai_factors"></div>
+        </div>
+
+        <div class="kpi-list" id="o_kpi_list"></div>
+
+        <div class="pd-row">
+          <span>Probabilité de défaut (PD)</span>
+          <span id="o_pd">—</span>
+        </div>
+        <div class="pd-row" style="border-top:none;padding-top:0">
+          <span>Seuil de décision</span>
+          <span id="o_threshold">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Résultat FRAUDE ── -->
+    <div class="card" id="card_fraude">
+      <div class="card-header"><div class="icon">🔍</div><h2>Détection Fraude</h2></div>
+
+      <div class="result-placeholder" id="fraude_empty">
+        <div class="icon-big">🛡️</div>
+        <p>Cliquez sur <strong>Vérifier le risque fraude</strong> pour analyser la cohérence du profil.</p>
+      </div>
+
+      <div id="fraude_content" style="display:none">
+        <div class="score-wrap">
+          <div class="score-ring">
+            <svg viewBox="0 0 104 104" width="104" height="104">
+              <circle class="ring-bg"   cx="52" cy="52" r="47"/>
+              <circle class="ring-fill" cx="52" cy="52" r="47" id="f_ring_fill"/>
+            </svg>
+            <div class="score-val">
+              <span class="score-number" id="f_score">—</span>
+              <span class="score-max">/100</span>
+            </div>
+          </div>
+          <div class="notation-badge" id="f_notation_badge">—</div>
+          <div style="font-size:11.5px;color:var(--grey-600);text-align:center" id="f_label">—</div>
+        </div>
+
+        <div class="seg-bar-track">
+          <div class="seg-bar-fill"></div>
+          <div class="seg-bar-cursor" id="f_bar_cursor" style="left:0%;"></div>
+        </div>
+        <div class="seg-labels"><span>0 · Normal</span><span>40 · Modéré</span><span>60 · Élevé</span><span>100 · Critique</span></div>
+
+        <div style="padding:0 20px 16px">
+          <div class="decision-banner" id="f_decision_banner">
+            <span id="f_decision_icon">—</span>
+            <span id="f_decision_text">—</span>
+          </div>
+        </div>
+
+        <div class="xai-box fraud">
+          <h4>🛡️ Top facteurs d'anomalie</h4>
+          <div id="f_facteurs_list"></div>
+        </div>
+
+        <div class="pd-row">
+          <span>Erreur de reconstruction</span>
+          <span id="f_error">—</span>
+        </div>
+        <div class="pd-row" style="border-top:none;padding-top:0">
+          <span>Seuil de détection (P95)</span>
+          <span id="f_threshold">—</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   Helpers UI
+   ════════════════════════════════════════════════════════════════════ */
+function toggleEnfants() {
+  const val = document.getElementById('Flag_Enfants').value;
+  const field = document.getElementById('field_nb_enfants');
+  field.style.display = val === 'Oui' ? 'flex' : 'none';
+  if (val === 'Non') document.getElementById('Nb_Enfants').value = 0;
+}
+
+function toggleExtCredit() {
+  const cb    = document.getElementById('toggle_ext');
+  const panel = document.getElementById('ext_panel');
+  panel.classList.toggle('open', cb.checked);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Collecte commune — un seul formulaire alimente les deux objectifs.
+   Les labels restent en FRANÇAIS ici : la traduction FR→EN (mapping.py)
+   est appliquée côté serveur par ScoringService.translate_input(),
+   pour octroi ET pour fraude (même logique de traduction).
+   ════════════════════════════════════════════════════════════════════ */
+function collectFormData() {
+  const get  = id => document.getElementById(id)?.value?.trim() ?? '';
+  const getN = id => parseFloat(get(id)) || 0;
+  const getI = id => parseInt(get(id)) || 0;
+
+  const hasExt = document.getElementById('toggle_ext').checked;
+
+  let daysCreditExt = 0;
+  if (hasExt) {
+    const rawDate = get('DAYS_CREDIT_EXT');
+    if (rawDate) {
+      const d = new Date(rawDate);
+      const today = new Date();
+      daysCreditExt = Math.round((d - today) / 86400000);
+    }
+  }
+
+  return {
+    // Identité
+    Genre:                get('Genre'),
+    Age:                  getI('Age'),
+    Situation_Familiale:  get('Situation_Familiale'),
+    Nb_Membres_Famille:   getI('Nb_Membres_Famille'),
+    Nb_Enfants:           getI('Nb_Enfants'),
+
+    // Patrimoine (Oui/Non → traduit en 1/0 côté serveur via FLAG_MAP)
+    Flag_Voiture:         get('Flag_Voiture'),
+
+    // Emploi
+    Type_Revenu:          get('Type_Revenu'),
+    Profession:           get('Profession'),
+    Niveau_Education:     get('Niveau_Education'),
+    Revenu_Total:         getN('Revenu_Total'),
+
+    // Logement
+    Type_Logement:        get('Type_Logement'),
+
+    // Crédit demandé
+    Type_Contrat:         get('Type_Contrat'),
+    Type_Client:          get('Type_Client'),
+    Montant_Credit:       getN('Montant_Credit'),
+    Mensualite:           getN('Mensualite'),
+    Prix_Bien:            getN('Prix_Bien'),
+
+    // Crédit externe
+    Flag_Credit_Externe:  hasExt ? 'Oui' : 'Non',
+    AMT_CREDIT_EXT:       hasExt ? getN('AMT_CREDIT_EXT')  : 0,
+    AMT_ANNUITY_EXT:      hasExt ? getN('AMT_ANNUITY_EXT') : 0,
+    CNT_PAYMENT_EXT:      hasExt ? getI('CNT_PAYMENT_EXT') : 0,
+    DAYS_CREDIT_EXT:      hasExt ? daysCreditExt            : 0,
+
+    // Scores bureau (0-900, partagés entre octroi et fraude)
+    Score_Externe_1: getN('Score_Externe_1'),
+    Score_Externe_2: getN('Score_Externe_2'),
+    Score_Externe_3: getN('Score_Externe_3'),
+
+    // Cohérence géo (utilisée uniquement par fraude)
+    Ville_Enreg_Diff_Residence:  getI('Ville_Enreg_Diff_Residence'),
+    Ville_Enreg_Diff_Travail:    getI('Ville_Enreg_Diff_Travail'),
+    Region_Enreg_Diff_Residence: getI('Region_Enreg_Diff_Residence'),
+  };
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   OCTROI
+   ════════════════════════════════════════════════════════════════════ */
+let _currentDecisionId    = null;
+let _currentDecisionModel = null;
+
+function octroiScoreColor(score) {
+  if (score >= 700) return '#0fa36e';
+  if (score >= 500) return '#e07b2a';
+  return '#d63b3b';
+}
+
+function renderOctroiResult(res) {
+  document.getElementById('octroi_empty').style.display   = 'none';
+  document.getElementById('octroi_content').style.display = 'block';
+
+  const score = res.score, color = octroiScoreColor(score);
+  const circumference = 295;
+  const offset = circumference - (score / 1000) * circumference;
+  const ring = document.getElementById('o_ring_fill');
+  ring.style.stroke = color;
+  setTimeout(() => { ring.style.strokeDashoffset = offset; }, 50);
+
+  document.getElementById('o_score').textContent = score;
+
+  const badge = document.getElementById('o_notation_badge');
+  badge.textContent = res.notation;
+  badge.style.background = color + '22';
+  badge.style.color = color;
+
+  document.getElementById('o_label').textContent = res.label || '';
+
+  const banner = document.getElementById('o_decision_banner');
+  const dmap = {
+    'APPROUVE':       { cls:'approuve', icon:'✅', txt:'Approuvé' },
+    'REFUSE':         { cls:'refuse',   icon:'❌', txt:'Refusé' },
+    'REVUE_MANUELLE': { cls:'revue',    icon:'🔎', txt:'Revue manuelle' },
+  };
+  const dm = dmap[res.decision] || dmap['REFUSE'];
+  banner.className = 'decision-banner ' + dm.cls;
+  document.getElementById('o_decision_icon').textContent = dm.icon;
+  let dtxt = dm.txt;
+  if (res.mode_decision === 'REGLE_METIER') dtxt += ' — règle métier';
+  else if (res.mode_decision === 'MODELE_ML') dtxt += ' — modèle ML';
+  document.getElementById('o_decision_text').textContent = dtxt;
+
+  const mBox  = document.getElementById('o_motifs_box');
+  const mList = document.getElementById('o_motifs_list');
+  mList.innerHTML = '';
+  if (res.motifs && res.motifs.length) {
+    res.motifs.forEach(m => { const li=document.createElement('li'); li.textContent=m; mList.appendChild(li); });
+    mBox.style.display = 'block';
+  } else { mBox.style.display = 'none'; }
+
+  const kpiList = document.getElementById('o_kpi_list');
+  kpiList.innerHTML = '';
+  const kpiLabels = {
+    ratio_endettement: "Taux d'endettement", ratio_ltv: "Ratio LTV",
+    score_bureau: "Score bureau moyen", req_bureau_an: "Requêtes bureau / an",
+    nb_membres_famille: "Membres de la famille",
+  };
+  for (const [key, val] of Object.entries(res.indicateurs || {})) {
+    const st  = val.status === 'OK' ? 'ok' : 'attn';
+    const lbl = kpiLabels[key] || key;
+    kpiList.insertAdjacentHTML('beforeend', `
+      <div class="kpi-item">
+        <div class="kpi-dot ${st}"></div>
+        <span class="kpi-name">${lbl}</span>
+        <span class="kpi-value">${val.valeur} ${val.unite}</span>
+        <span class="kpi-badge ${st}">${val.status}</span>
+      </div>`);
+  }
+
+  document.getElementById('o_pd').textContent        = (res.pd_value * 100).toFixed(3) + ' %';
+  document.getElementById('o_threshold').textContent = (res.threshold * 100).toFixed(1) + ' %';
+
+  _currentDecisionId    = res.decision_id || null;
+  _currentDecisionModel = res.decision;
+}
+
+async function predictOctroi() {
+  const btn = document.getElementById('btn_octroi');
+  const spinner = document.getElementById('spinner_octroi');
+  const lbl = document.getElementById('btn_label_octroi');
+
+  btn.disabled = true; spinner.style.display = 'inline-block';
+  lbl.textContent = 'Calcul en cours…';
+
+  const data = collectFormData();
+
+  try {
+    const resp = await fetch('http://127.0.0.1:5000/api/octroi/predict', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    const json = await resp.json();
+    if (json.success && json.data) {
+      renderOctroiResult(json.data);
+      explainOctroiDecision(data);
+    } else {
+      alert('Erreur API octroi : ' + (json.message || JSON.stringify(json)));
+    }
+  } catch (err) {
+    alert('Impossible de contacter le serveur Flask.\n' + err);
+  } finally {
+    btn.disabled = false; spinner.style.display = 'none';
+    lbl.textContent = '⚡ Calculer le Score de Risque';
+  }
+}
+
+async function explainOctroiDecision(data) {
+  const box = document.getElementById('o_xai_box');
+  box.style.display = 'block';
+  document.getElementById('o_xai_phrase').textContent = '⏳ Analyse en cours…';
+  document.getElementById('o_xai_factors').innerHTML  = '';
+
+  try {
+    const resp = await fetch('http://127.0.0.1:5000/api/octroi/explain/shap?top_n=5', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data),
+    });
+    const json = await resp.json();
+    if (!json.success) { box.style.display='none'; return; }
+    const r = json.data;
+
+    const risques  = (r.shap_values||[]).filter(f=>f.direction==='risque').map(f=>f.feature).slice(0,2);
+    const protects = (r.shap_values||[]).filter(f=>f.direction!=='risque').map(f=>f.feature).slice(0,2);
+    let phrase = '';
+    if (risques.length)  phrase += `⚠ <strong>Points d'attention :</strong> ${risques.join(', ')} augmentent le risque. `;
+    if (protects.length) phrase += `✅ <strong>Points positifs :</strong> ${protects.join(', ')} jouent en faveur du client.`;
+    document.getElementById('o_xai_phrase').innerHTML = phrase || r.explication || '';
+
+    const fz = document.getElementById('o_xai_factors');
+    fz.innerHTML = '<div style="font-size:11px;color:#6b7a96;margin-bottom:6px;font-weight:600">IMPACT SUR LA DÉCISION</div>';
+    const maxVal = Math.max(...(r.shap_values||[]).map(f=>Math.abs(f.impact||0)), 0.001);
+
+    (r.shap_values||[]).forEach(f => {
+      const isRisk = f.direction === 'risque';
+      const pct    = Math.round(Math.abs(f.impact||0) / maxVal * 100);
+      const color  = isRisk ? '#d63b3b' : '#0fa36e';
+      const bg     = isRisk ? '#fdf0f0' : '#e6f7f2';
+      const label  = isRisk ? '▲ Augmente le risque' : '▼ Réduit le risque';
+      const div    = document.createElement('div');
+      div.style.cssText = `display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #edf1f7; font-size:12px;`;
+      div.innerHTML = `
+        <span style="flex:1; color:#152247; font-weight:500">${f.feature}</span>
+        <div style="width:80px; height:7px; background:#edf1f7; border-radius:4px; flex-shrink:0">
+          <div style="width:${pct}%; height:7px; background:${color}; border-radius:4px"></div>
+        </div>
+        <span style="background:${bg}; color:${color}; font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; flex-shrink:0">${label}</span>`;
+      fz.appendChild(div);
+    });
+  } catch(e) { box.style.display='none'; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   FRAUDE
+   ════════════════════════════════════════════════════════════════════ */
+function fraudeNotationColor(notation) {
+  const map = { LOW:'#0fa36e', MEDIUM:'#e07b2a', HIGH:'#d63b3b', CRITIC:'#b3261e' };
+  return map[notation] || '#6b7a96';
+}
+
+function renderFraudeResult(res) {
+  document.getElementById('fraude_empty').style.display   = 'none';
+  document.getElementById('fraude_content').style.display = 'block';
+
+  const score = res.score, color = fraudeNotationColor(res.notation);
+  const circumference = 295;
+  const offset = circumference - (score / 100) * circumference;
+  const ring = document.getElementById('f_ring_fill');
+  ring.style.stroke = color;
+  setTimeout(() => { ring.style.strokeDashoffset = offset; }, 50);
+
+  document.getElementById('f_score').textContent = score;
+
+  const badge = document.getElementById('f_notation_badge');
+  badge.textContent = res.notation;
+  badge.style.background = color + '22';
+  badge.style.color = color;
+
+  document.getElementById('f_label').textContent = res.label || '';
+
+  setTimeout(() => { document.getElementById('f_bar_cursor').style.left = score + '%'; }, 50);
+
+  const banner = document.getElementById('f_decision_banner');
+  const dmap = {
+    'VALIDE': { cls:'valide', icon:'✅', txt:'Profil cohérent' },
+    'REVUE':  { cls:'revue',  icon:'🔎', txt:'Revue manuelle requise' },
+    'BLOQUE': { cls:'bloque', icon:'⛔', txt:'Profil suspect — bloqué' },
+  };
+  const dm = dmap[res.decision] || dmap['REVUE'];
+  banner.className = 'decision-banner ' + dm.cls;
+  document.getElementById('f_decision_icon').textContent = dm.icon;
+  document.getElementById('f_decision_text').textContent = dm.txt;
+
+  const list = document.getElementById('f_facteurs_list');
+  list.innerHTML = '';
+  const facteurs = res.top_facteurs || [];
+  const maxImpact = Math.max(...facteurs.map(f => f.impact), 0.0001);
+  facteurs.forEach((f, i) => {
+    const pct = Math.round((f.impact / maxImpact) * 100);
+    list.insertAdjacentHTML('beforeend', `
+      <div class="facteur-row">
+        <div class="rank-num">${i+1}</div>
+        <div style="flex:1;">
+          <div class="facteur-name">${f.feature}</div>
+          <div class="impact-bar-track"><div class="impact-bar-fill" style="width:${pct}%;"></div></div>
+          <div class="facteur-meta">impact +${f.impact.toFixed(4)} · valeur : ${f.valeur}</div>
+        </div>
+      </div>`);
+  });
+
+  document.getElementById('f_error').textContent     = res.reconstruction_error.toExponential(3);
+  document.getElementById('f_threshold').textContent = res.threshold.toExponential(3);
+}
+
+async function predictFraude() {
+  const btn = document.getElementById('btn_fraude');
+  const spinner = document.getElementById('spinner_fraude');
+  const lbl = document.getElementById('btn_label_fraude');
+
+  btn.disabled = true; spinner.style.display = 'inline-block';
+  lbl.textContent = 'Analyse en cours…';
+
+  try {
+    const resp = await fetch('http://127.0.0.1:5000/api/fraude/predict', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(collectFormData())
+    });
+    const json = await resp.json();
+    if (json.success && json.data) renderFraudeResult(json.data);
+    else alert('Erreur API fraude : ' + (json.message || JSON.stringify(json)));
+  } catch (err) {
+    alert('Impossible de contacter le serveur Flask.\n' + err);
+  } finally {
+    btn.disabled = false; spinner.style.display = 'none';
+    lbl.textContent = '🔍 Vérifier le Risque Fraude';
+  }
+}
+</script>
+
+</body>
+</html>

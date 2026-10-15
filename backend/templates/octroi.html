@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextCredit - Scoring d'Octroi</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#152247;--navy-light:#1e3060;
+  --sky:#89B4E8;--sky-light:#c4d9f5;--sky-dim:#e8f1fb;
+  --bg:#f4f6fb;--card:#ffffff;
+  --line:#eaeef6;
+  --g500:#6b7488;--g400:#9aa1b3;
+  --ok:#3ec98b;--ok-soft:#e6f9ef;
+  --warn:#f5a623;--warn-soft:#fef3df;
+  --danger:#ef4b4b;--danger-soft:#fde9e9;
+  --r-card:22px;--r-pill:20px;--r-md:12px;--r-sm:8px;
+  --t:.18s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh;}
+
+.hdr{height:72px;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 32px;gap:14px;position:sticky;top:0;z-index:200;}
+.hdr-logo{width:34px;height:34px;background:var(--navy);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-family:'Syne';
+  font-weight:800;font-size:13px;color:#fff;flex-shrink:0;}
+.hdr-name{font-family:'Syne';font-weight:800;font-size:17px;color:var(--navy);}
+.hdr-pill{margin-left:32px;background:var(--navy);color:#fff;font-family:'DM Sans';
+  font-weight:600;font-size:13px;padding:9px 20px;border-radius:var(--r-pill);}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
+.hdr-sub{font-size:13px;color:var(--g500);}
+
+.shell{width:100%;margin:0 auto;padding:28px 28px 60px;
+  display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start;}
+
+.card{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);
+  overflow:hidden;}
+.card-hd{padding:18px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px;}
+.card-icon{width:32px;height:32px;background:var(--sky-dim);border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--navy);}
+.card-icon svg{display:block;width:16px;height:16px;}
+.card-title{font-family:'Syne';font-size:14px;font-weight:700;color:var(--navy);}
+.card-body{padding:24px;}
+
+.sec-lbl{font-family:'Syne';font-size:10.5px;font-weight:700;letter-spacing:.8px;
+  text-transform:uppercase;color:var(--sky);margin-bottom:14px;padding-bottom:7px;
+  border-bottom:1px solid var(--line);}
+.form-sec{margin-bottom:26px;}
+.form-sec:last-child{margin-bottom:0;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid.c3{grid-template-columns:1fr 1fr 1fr;}
+.grid.c1{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field.span2{grid-column:span 2;}
+.field.span3{grid-column:span 3;}
+
+label{font-size:11.5px;font-weight:600;color:var(--g500);text-transform:uppercase;letter-spacing:.4px;}
+
+input, select{
+  height:42px;padding:0 13px;border:1.5px solid var(--line);border-radius:var(--r-sm);
+  font-family:'DM Sans';font-weight:500;font-size:13.5px;color:var(--navy);background:var(--bg);
+  transition:border-color var(--t);outline:none;width:100%;
+}
+input:focus, select:focus{border-color:var(--sky);background:#fff;box-shadow:0 0 0 3px rgba(137,180,232,.16);}
+input::placeholder{color:var(--g400);font-weight:400;}
+select{cursor:pointer;appearance:none;
+  background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+
+.cin-input{font-family:'Syne';font-weight:700;letter-spacing:1.5px;font-size:15px;}
+.cin-hint{font-size:11px;color:var(--g400);margin-top:2px;}
+.cin-hint.err{color:var(--danger);}
+.cin-hint.ok{color:var(--ok);}
+
+.tog-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;
+  background:var(--bg);border:1.5px solid var(--line);border-radius:var(--r-sm);cursor:pointer;
+  transition:all var(--t);}
+.tog-row:hover{border-color:var(--sky);background:var(--sky-dim);}
+.tog-lbl{font-size:13.5px;font-weight:500;color:var(--navy);text-transform:none;}
+.tog-hint{font-size:11px;color:var(--g500);margin-top:2px;text-transform:none;}
+.tog-switch{position:relative;width:44px;height:25px;flex-shrink:0;}
+.tog-switch input{opacity:0;width:0;height:0;}
+.tog-track{position:absolute;inset:0;background:var(--line);border-radius:25px;
+  transition:background var(--t);cursor:pointer;}
+.tog-track::after{content:'';position:absolute;top:3px;left:3px;width:19px;height:19px;
+  background:#fff;border-radius:50%;transition:transform var(--t);box-shadow:0 1px 3px rgba(21,34,71,.2);}
+.tog-switch input:checked + .tog-track{background:var(--sky);}
+.tog-switch input:checked + .tog-track::after{transform:translateX(19px);}
+
+.pill-group{display:flex;gap:8px;}
+.pill-opt{flex:1;height:42px;border:1.5px solid var(--line);border-radius:var(--r-sm);
+  background:var(--bg);display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:13.5px;font-weight:600;color:var(--g500);cursor:pointer;transition:all var(--t);}
+.pill-opt svg{width:15px;height:15px;display:block;}
+.pill-opt.on{background:var(--sky-dim);border-color:var(--sky);color:var(--navy);}
+
+.ext-panel{max-height:0;overflow:hidden;transition:max-height .35s ease,opacity .25s ease,margin-top .2s ease;
+  opacity:0;margin-top:0;}
+.ext-panel.open{max-height:600px;opacity:1;margin-top:16px;}
+.ext-inner{background:var(--sky-dim);border:1.5px solid var(--sky-light);border-radius:var(--r-md);padding:20px;}
+
+.btn-submit{width:100%;height:50px;background:var(--navy);color:#fff;border:none;
+  border-radius:var(--r-md);font-family:'Syne';font-size:14.5px;font-weight:700;letter-spacing:.2px;
+  cursor:pointer;transition:all var(--t);display:flex;align-items:center;justify-content:center;
+  gap:9px;margin-top:24px;}
+.btn-submit:hover{background:var(--navy-light);transform:translateY(-1px);box-shadow:0 6px 20px rgba(21,34,71,.28);}
+.btn-submit:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-submit svg{display:block;}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:rot .6s linear infinite;display:none;}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.result-col{position:sticky;top:100px;display:flex;flex-direction:column;gap:14px;}
+
+.empty-state{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:70px 28px;gap:14px;text-align:center;min-height:340px;}
+.empty-state svg{opacity:.25;}
+.empty-title{font-family:'Syne';font-weight:700;font-size:14px;color:var(--navy);opacity:.4;}
+.empty-sub{font-size:12.5px;color:var(--g400);max-width:220px;line-height:1.6;}
+
+.gauge-card{background:#fff;border-radius:var(--r-card);border:1px solid var(--line);
+  padding:28px 28px 24px;display:flex;flex-direction:column;align-items:center;display:none;}
+.gauge-top{width:100%;margin-bottom:6px;}
+.gauge-eyebrow{font-size:10.5px;font-weight:600;color:var(--g400);text-transform:uppercase;letter-spacing:.8px;}
+.gauge-client{font-family:'Syne';font-weight:800;font-size:17px;color:var(--navy);margin-top:3px;}
+
+.gauge-wrap{position:relative;width:260px;height:152px;margin:16px 0 4px;}
+.gauge-wrap svg{position:absolute;top:0;left:0;width:260px;height:260px;}
+.gauge-center{position:absolute;bottom:14px;left:0;right:0;display:flex;flex-direction:column;align-items:center;}
+.gauge-num{font-family:'Syne';font-weight:600;font-size:42px;color:var(--navy);letter-spacing:-.5px;line-height:1;}
+.gauge-denom{font-size:11px;color:var(--g400);margin-top:2px;}
+.gt{font-size:9.5px;color:var(--g400);}
+
+.dec-band{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:var(--r-md);
+  width:100%;margin-top:18px;}
+.dec-band.APPROUVE{background:var(--ok-soft);}
+.dec-band.REFUSE{background:var(--danger-soft);}
+.dec-band.REVUE_MANUELLE{background:var(--warn-soft);}
+.dec-icon{flex-shrink:0;width:20px;height:20px;display:flex;}
+.dec-icon svg{display:block;width:100%;height:100%;}
+.dec-band.APPROUVE .dec-icon{color:var(--ok);}
+.dec-band.REFUSE .dec-icon{color:var(--danger);}
+.dec-band.REVUE_MANUELLE .dec-icon{color:var(--warn);}
+.dec-name{font-family:'Syne';font-size:14px;font-weight:700;}
+.dec-band.APPROUVE .dec-name{color:var(--ok);}
+.dec-band.REFUSE .dec-name{color:var(--danger);}
+.dec-band.REVUE_MANUELLE .dec-name{color:var(--warn);}
+.dec-mode{font-size:11px;color:var(--g500);margin-top:1px;}
+
+.foot-row{width:100%;display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--line);}
+.foot-item{text-align:center;}
+.foot-val{font-family:'Syne';font-weight:700;font-size:16px;letter-spacing:.1px;}
+.foot-lbl{font-size:10.5px;color:var(--g400);margin-top:2px;}
+
+.motifs-box{display:none;background:var(--warn-soft);border-radius:var(--r-card);border:1px solid var(--line);
+  padding:18px 20px;}
+.motifs-hd{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+.motifs-hd svg{width:16px;height:16px;color:var(--warn);display:block;}
+.motifs-title{font-family:'Syne';font-size:12.5px;font-weight:700;color:var(--warn);text-transform:uppercase;letter-spacing:.4px;}
+.motifs-list{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.motifs-list li{font-size:13px;color:var(--navy);padding-left:14px;position:relative;}
+.motifs-list li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--warn);}
+
+.kpi-grid{display:none;grid-template-columns:repeat(2,1fr);gap:12px;}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px;}
+.kpi-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.kpi-icon svg{width:15px;height:15px;display:block;}
+.kpi-badge{font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:10px;white-space:nowrap;}
+.kpi-badge.ok{background:var(--ok-soft);color:var(--ok);}
+.kpi-badge.bad{background:var(--danger-soft);color:var(--danger);}
+.kpi-val{font-family:'Syne';font-weight:600;font-size:20px;color:var(--navy);margin-bottom:3px;letter-spacing:-.2px;}
+.kpi-name{font-size:11px;color:var(--g500);}
+
+.xai-card{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:22px;}
+.xai-hd{margin-bottom:14px;}
+.xai-title{font-family:'Syne';font-size:13px;font-weight:700;}
+.xai-note{font-size:12px;color:var(--g500);line-height:1.6;margin-bottom:13px;}
+.frow{display:flex;align-items:center;gap:11px;padding:8px 0;}
+.frow-lbl{font-size:12px;color:var(--navy);width:140px;flex-shrink:0;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;font-weight:500;}
+.frow-track{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
+.frow-fill{height:100%;border-radius:3px;transition:width .6s ease;}
+.frow-fill.risk{background:linear-gradient(90deg,var(--warn),var(--danger));}
+.frow-fill.prot{background:linear-gradient(90deg,var(--sky),var(--ok));}
+.frow-tag{font-size:10px;font-weight:600;width:84px;text-align:right;flex-shrink:0;}
+.frow-tag.risk{color:var(--danger);}
+.frow-tag.prot{color:var(--ok);}
+
+.pd-row{display:flex;justify-content:space-between;padding:9px 0;font-size:12px;color:var(--g500);}
+.pd-row span:last-child{font-weight:600;color:var(--navy);font-size:13px;}
+
+.agent-box{display:none;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:22px;}
+.agent-hd{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.agent-hd svg{width:16px;height:16px;color:var(--navy);display:block;}
+.agent-title{font-family:'Syne';font-size:13px;font-weight:700;}
+.agent-select{margin-bottom:10px;}
+.agent-textarea{width:100%;padding:10px 12px;margin-bottom:10px;border:1.5px solid var(--line);
+  border-radius:var(--r-sm);font-family:'DM Sans';font-size:13px;color:var(--navy);resize:vertical;
+  min-height:64px;background:var(--bg);}
+.agent-textarea:focus{border-color:var(--sky);outline:none;background:#fff;}
+.btn-confirm{width:100%;height:42px;background:var(--ok);color:#fff;border:none;border-radius:var(--r-sm);
+  font-family:'Syne';font-size:13px;font-weight:700;cursor:pointer;transition:opacity var(--t);}
+.btn-confirm:hover{opacity:.9;}
+.confirm-result{margin-top:10px;padding:10px 12px;border-radius:var(--r-sm);font-size:12.5px;display:none;}
+.confirm-result.ok{background:var(--ok-soft);color:var(--ok);}
+.confirm-result.error{background:var(--danger-soft);color:var(--danger);}
+.override-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9.5px;font-weight:700;
+  background:var(--danger-soft);color:var(--danger);margin-left:6px;}
+
+.bureau-info{display:flex;align-items:center;gap:9px;padding:11px 14px;background:var(--bg);
+  border-radius:var(--r-sm);margin-top:14px;font-size:11.5px;color:var(--g500);}
+.bureau-info svg{width:14px;height:14px;flex-shrink:0;color:var(--sky);}
+.bureau-info strong{color:var(--navy);font-weight:600;}
+
+@media(max-width:980px){
+  .shell{grid-template-columns:1fr;}
+  .result-col{position:static;}
+  .grid{grid-template-columns:1fr;}
+  .grid.c3{grid-template-columns:1fr 1fr;}
+  .field.span2,.field.span3{grid-column:span 1;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* ── Bouton flottant dossiers en attente ── */
+.doss-fab-wrap{position:fixed;top:18px;right:24px;z-index:400;}
+.hdr-pending-btn{display:flex;align-items:center;gap:7px;background:var(--warn-soft);
+  color:var(--warn);border:1.5px solid var(--warn);border-radius:20px;
+  font-family:'DM Sans';font-weight:600;font-size:12.5px;padding:7px 16px;
+  cursor:pointer;transition:background .18s ease;
+  box-shadow:0 4px 16px rgba(245,166,35,.18);}
+.hdr-pending-btn:hover{background:#fde8c0;}
+.hdr-pending-btn svg{flex-shrink:0;}
+.hdr-badge{background:var(--warn);color:#fff;border-radius:50%;
+  width:18px;height:18px;font-size:10px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;}
+
+/* ── Modal dossiers en attente ── */
+.doss-overlay{position:fixed;inset:0;background:rgba(21,34,71,.5);z-index:600;
+  display:none;align-items:center;justify-content:center;padding:20px;
+  backdrop-filter:blur(3px);}
+.doss-overlay.on{display:flex;}
+.doss-modal{background:#fff;border-radius:22px;box-shadow:0 20px 60px rgba(21,34,71,.22);
+  width:100%;max-width:1020px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.doss-modal-hd{padding:22px 26px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:14px;}
+.doss-modal-icon{width:38px;height:38px;background:var(--warn-soft);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--warn);}
+.doss-modal-icon svg{width:18px;height:18px;}
+.doss-modal-title{font-family:'Syne';font-weight:700;font-size:15px;color:var(--navy);}
+.doss-modal-sub{font-size:12px;color:var(--g400);margin-top:1px;}
+.doss-modal-close{width:34px;height:34px;border:none;background:var(--bg);border-radius:50%;
+  cursor:pointer;color:var(--g500);margin-left:auto;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;}
+.doss-modal-body{overflow-y:auto;flex:1;padding:0;}
+.doss-loading{display:flex;align-items:center;gap:12px;padding:40px 26px;
+  color:var(--g400);font-size:13px;}
+.doss-spinner{width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--sky);
+  border-radius:50%;animation:dspin .7s linear infinite;flex-shrink:0;}
+@keyframes dspin{to{transform:rotate(360deg)}}
+
+/* ── Table dossiers ── */
+.doss-table{width:100%;border-collapse:collapse;}
+.doss-table thead tr{background:var(--bg);}
+.doss-table th{padding:11px 16px;text-align:left;font-size:10.5px;font-weight:700;
+  color:var(--g400);text-transform:uppercase;letter-spacing:.5px;
+  border-bottom:1px solid var(--line);white-space:nowrap;}
+.doss-table td{padding:12px 16px;font-size:12.5px;border-bottom:1px solid var(--line);
+  vertical-align:middle;}
+.doss-table tbody tr{cursor:pointer;transition:background .15s ease;}
+.doss-table tbody tr:hover{background:var(--sky-dim);}
+.doss-table tbody tr.selected{background:#eaf1fc;}
+.doss-sc{display:inline-flex;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;}
+.doss-nota{display:inline-flex;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;}
+.doss-dec{display:inline-flex;padding:3px 10px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;}
+
+/* ── Panneau détail dossier ── */
+.doss-detail{background:var(--bg);border-top:1px solid var(--line);padding:22px 26px;}
+.doss-detail-hd{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+.doss-detail-title{font-family:'Syne';font-weight:700;font-size:13px;color:var(--navy);}
+.doss-detail-id{font-size:11px;color:var(--g400);margin-left:auto;}
+.doss-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.doss-dfield{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;}
+.doss-dfield-lbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:4px;}
+.doss-dfield-val{font-size:13px;font-weight:600;color:var(--navy);}
+.doss-motifs{background:#fff;border:1px solid var(--line);border-radius:12px;
+  padding:12px 14px;margin-bottom:14px;}
+.doss-motifs-lbl{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.4px;margin-bottom:8px;}
+.doss-motifs ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:3px;}
+.doss-motifs li{font-size:12px;color:var(--navy);}
+.doss-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.doss-btn-ok{flex:1;height:40px;background:var(--ok);color:#fff;border:none;
+  border-radius:12px;font-family:'Syne';font-size:12px;font-weight:700;cursor:pointer;
+  transition:opacity .18s;min-width:140px;}
+.doss-btn-ok:hover{opacity:.88;}
+.doss-btn-ko{flex:1;height:40px;background:var(--danger);color:#fff;border:none;
+  border-radius:12px;font-family:'Syne';font-size:12px;font-weight:700;cursor:pointer;
+  transition:opacity .18s;min-width:140px;}
+.doss-btn-ko:hover{opacity:.88;}
+.doss-confirm-msg{font-size:12px;padding:8px 12px;border-radius:10px;display:none;width:100%;}
+.doss-confirm-msg.ok{background:var(--ok-soft);color:var(--ok);}
+.doss-confirm-msg.err{background:var(--danger-soft);color:var(--danger);}
+</style>
+</head>
+<body>
+
+<div class="doss-fab-wrap">
+  <button class="hdr-pending-btn" onclick="openDossiersModal()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Dossiers en attente
+    <span class="hdr-badge" id="hdr_badge" style="display:none">0</span>
+  </button>
+</div>
+
+<!-- ── Modal dossiers en attente ─────────────────────────────── -->
+<div class="doss-overlay" id="doss_overlay" onclick="closeDossiersModal(event)">
+  <div class="doss-modal">
+    <div class="doss-modal-hd">
+      <div class="doss-modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div class="doss-modal-title">Dossiers en attente</div>
+        <div class="doss-modal-sub" id="doss_sub">Chargement…</div>
+      </div>
+      <button class="doss-modal-close" onclick="closeDossiersModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="doss-modal-body" id="doss_body">
+      <div class="doss-loading"><div class="doss-spinner"></div>Chargement des dossiers…</div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <span class="card-title">Identite du client</span>
+      </div>
+      <div class="card-body">
+
+        <div class="form-sec">
+          <div class="sec-lbl">Piece d'identite</div>
+          <div class="grid c1">
+            <div class="field">
+              <label>Numero de CIN</label>
+              <input type="text" id="CIN" class="cin-input" placeholder="12345678"
+                     maxlength="8" inputmode="numeric"
+                     oninput="validerCIN()">
+              <span class="cin-hint" id="cin_hint">8 chiffres - utilise pour retrouver l'historique bureau du client</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-sec">
+          <div class="sec-lbl">Profil personnel</div>
+          <div class="grid">
+            <div class="field">
+              <label>Genre</label>
+              <select id="Genre">
+                <option value="">-- Selectionner --</option>
+                <option value="Homme">Homme</option>
+                <option value="Femme">Femme</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Age (annees)</label>
+              <input type="number" id="Age" placeholder="Ex : 35" min="18" max="100">
+            </div>
+            <div class="field">
+              <label>Situation familiale</label>
+              <select id="Situation_Familiale">
+                <option value="">-- Selectionner --</option>
+                <option value="Celibataire">Celibataire</option>
+                <option value="Marie(e)">Marie(e)</option>
+                <option value="Union libre">Union libre</option>
+                <option value="Veuf / Veuve">Veuf / Veuve</option>
+                <option value="Separe(e)">Separe(e)</option>
+                <option value="Non renseigne">Non renseigne</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Membres de la famille</label>
+              <input type="number" id="Nb_Membres_Famille" placeholder="Ex : 3" min="1" max="20">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-sec">
+          <div class="sec-lbl">Enfants et possessions</div>
+          <div class="grid">
+            <div class="field">
+              <label>Enfants a charge ?</label>
+              <select id="Flag_Enfants" onchange="toggleEnfants()">
+                <option value="Non">Non</option>
+                <option value="Oui">Oui</option>
+              </select>
+            </div>
+            <div class="field" id="field_nb_enfants" style="display:none">
+              <label>Nombre d'enfants</label>
+              <input type="number" id="Nb_Enfants" placeholder="Ex : 2" min="1" max="15" value="0">
+            </div>
+            <div class="field span2">
+              <label>Possede une voiture ?</label>
+              <div class="pill-group">
+                <button type="button" class="pill-opt" id="voiture_non" onclick="setVoiture('Non')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  Non
+                </button>
+                <button type="button" class="pill-opt" id="voiture_oui" onclick="setVoiture('Oui')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11"/><rect x="2" y="11" width="20" height="7" rx="2"/><circle cx="7" cy="18" r="1.5"/><circle cx="17" cy="18" r="1.5"/></svg>
+                  Oui
+                </button>
+              </div>
+              <input type="hidden" id="Possede_Voiture" value="">
+            </div>
+            <div class="field">
+              <label>Type de logement</label>
+              <select id="Type_Logement">
+                <option value="">-- Selectionner --</option>
+                <option value="Proprietaire">Proprietaire</option>
+                <option value="Appartement loue">Appartement loue</option>
+                <option value="Avec les parents">Avec les parents</option>
+                <option value="Logement municipal">Logement municipal</option>
+                <option value="Bureau / logement de fonction">Logement de fonction</option>
+                <option value="Logement en copropriete">Copropriete</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <span class="card-title">Emploi et revenus</span>
+      </div>
+      <div class="card-body">
+        <div class="form-sec">
+          <div class="grid">
+            <div class="field">
+              <label>Type de revenu</label>
+              <select id="Type_Revenu">
+                <option value="">-- Selectionner --</option>
+                <option value="Salarie(e)">Salarie(e)</option>
+                <option value="Fonctionnaire">Fonctionnaire</option>
+                <option value="Associe(e) commercial(e)">Associe(e) commercial(e)</option>
+                <option value="Retraite(e)">Retraite(e)</option>
+                <option value="Sans emploi">Sans emploi</option>
+                <option value="Etudiant(e)">Etudiant(e)</option>
+                <option value="Chef d'entreprise">Chef d'entreprise</option>
+                <option value="En conge maternite">En conge maternite</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Profession / poste</label>
+              <select id="Profession">
+                <option value="">-- Selectionner --</option>
+                <option value="Ouvrier / Manoeuvre">Ouvrier / Manoeuvre</option>
+                <option value="Personnel de base">Personnel de base</option>
+                <option value="Comptable">Comptable</option>
+                <option value="Cadre / Manager">Cadre / Manager</option>
+                <option value="Chauffeur">Chauffeur</option>
+                <option value="Commercial / Vendeur">Commercial / Vendeur</option>
+                <option value="Agent d'entretien">Agent d'entretien</option>
+                <option value="Cuisinier(ere)">Cuisinier(ere)</option>
+                <option value="Service prive a domicile">Service prive a domicile</option>
+                <option value="Personnel medical">Personnel medical</option>
+                <option value="Agent de securite">Agent de securite</option>
+                <option value="Technicien hautement qualifie">Technicien qualifie</option>
+                <option value="Serveur / Barman">Serveur / Barman</option>
+                <option value="Ouvrier peu qualifie">Ouvrier peu qualifie</option>
+                <option value="Agent immobilier">Agent immobilier</option>
+                <option value="Secretaire / Assistante">Secretaire / Assistante</option>
+                <option value="Informaticien(ne)">Informaticien(ne)</option>
+                <option value="Charge(e) des ressources humaines">Charge(e) RH</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Niveau d'education</label>
+              <select id="Niveau_Education">
+                <option value="">-- Selectionner --</option>
+                <option value="Etudes secondaires">Etudes secondaires</option>
+                <option value="Enseignement superieur">Enseignement superieur</option>
+                <option value="Formation incomplete">Formation incomplete</option>
+                <option value="Etudes inferieures">Etudes inferieures</option>
+                <option value="Formation academique">Formation academique</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Revenu mensuel (DT)</label>
+              <input type="number" id="Revenu_Total" placeholder="Ex : 2500" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 21 8 3 8"/></svg>
+        </div>
+        <span class="card-title">Demande de credit</span>
+      </div>
+      <div class="card-body">
+        <div class="form-sec">
+          <div class="grid c3">
+            <div class="field">
+              <label>Type de contrat</label>
+              <select id="Type_Contrat">
+                <option value="">-- Selectionner --</option>
+                <option value="Pret en especes">Pret en especes</option>
+                <option value="Pret consommation">Pret consommation</option>
+                <option value="Pret revolving">Pret revolving</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Type de client</label>
+              <select id="Type_Client">
+                <option value="">-- Selectionner --</option>
+                <option value="Nouveau client">Nouveau client</option>
+                <option value="Client regulier">Client regulier</option>
+                <option value="Client renouvele">Client renouvele</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Montant du credit (DT)</label>
+              <input type="number" id="Montant_Credit" placeholder="Ex : 50000" min="0" oninput="calculerEcheancier()">
+            </div>
+            <div class="field">
+              <label>Mensualite (DT)</label>
+              <input type="number" id="Mensualite" placeholder="Ex : 850" min="0" oninput="calculerEcheancier()">
+            </div>
+            <div class="field">
+              <label>Prix du bien (DT)</label>
+              <input type="number" id="Prix_Bien" placeholder="Ex : 60000" min="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-sec">
+          <div class="sec-lbl">Objet et calendrier du pret</div>
+          <div class="grid">
+            <div class="field">
+              <label>Objet du pret</label>
+              <select id="Objet_Pret" onchange="toggleObjetAutre()">
+                <option value="">-- Selectionner --</option>
+                <option value="Immobilier">Immobilier</option>
+                <option value="Vehicule">Vehicule</option>
+                <option value="Equipement menager">Equipement menager</option>
+                <option value="Travaux / Renovation">Travaux / Renovation</option>
+                <option value="Education">Education</option>
+                <option value="Sante">Sante</option>
+                <option value="Tresorerie">Tresorerie</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+            <div class="field" id="field_objet_autre" style="display:none">
+              <label>Preciser l'objet</label>
+              <input type="text" id="Objet_Pret_Autre" placeholder="Ex : achat materiel professionnel">
+            </div>
+            <div class="field">
+              <label>Date de debut du pret</label>
+              <input type="date" id="Date_Debut_Pret" oninput="calculerEcheancier()">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-sec">
+          <div class="sec-lbl">Echeancier (calcule automatiquement)</div>
+          <div class="grid">
+            <div class="field">
+              <label>Nombre d'echeances</label>
+              <input type="text" id="Nb_Echeances_Calc" value="--" readonly
+                     style="background:var(--sky-dim);color:var(--navy);font-weight:700;cursor:not-allowed;">
+            </div>
+            <div class="field">
+              <label>Date de fin prevue</label>
+              <input type="text" id="Date_Fin_Prevue_Calc" value="--" readonly
+                     style="background:var(--sky-dim);color:var(--navy);font-weight:700;cursor:not-allowed;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-hd">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </div>
+        <span class="card-title">Historique credit externe</span>
+      </div>
+      <div class="card-body">
+        <label class="tog-row" for="toggle_ext">
+          <div>
+            <div class="tog-lbl">Le client possede un credit externe en cours ?</div>
+            <div class="tog-hint">Si oui, renseignez les details ci-dessous</div>
+          </div>
+          <label class="tog-switch">
+            <input type="checkbox" id="toggle_ext" onchange="toggleExtCredit()">
+            <span class="tog-track"></span>
+          </label>
+        </label>
+
+        <div class="ext-panel" id="ext_panel">
+          <div class="ext-inner">
+            <div class="sec-lbl" style="margin-bottom:14px">Details du credit externe</div>
+            <div class="grid">
+              <div class="field">
+                <label>Montant du credit externe (DT)</label>
+                <input type="number" id="AMT_CREDIT_EXT" placeholder="Ex : 15000" min="0">
+              </div>
+              <div class="field">
+                <label>Mensualite externe (DT)</label>
+                <input type="number" id="AMT_ANNUITY_EXT" placeholder="Ex : 320" min="0">
+              </div>
+              <div class="field">
+                <label>Echeances restantes</label>
+                <input type="number" id="CNT_PAYMENT_EXT" placeholder="Ex : 24" min="0" max="360">
+              </div>
+              <div class="field">
+                <label>Debut du contrat externe</label>
+                <input type="date" id="DAYS_CREDIT_EXT">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btn_submit" onclick="predict()">
+      <div class="spin" id="spinner"></div>
+      <svg id="btn_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M13 2 L4 14 L11 14 L10 22 L20 9 L13 9 Z"/></svg>
+      <span id="btn_label">Calculer le score de risque</span>
+    </button>
+
+  </div>
+
+  <div class="result-col">
+
+    <div class="empty-state" id="empty">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#152247" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div class="empty-title">Aucune analyse</div>
+      <div class="empty-sub">Completez le formulaire et cliquez sur Calculer pour obtenir le score de risque d'octroi.</div>
+    </div>
+
+    <div class="gauge-card" id="gauge_card">
+      <div class="gauge-top">
+        <div class="gauge-eyebrow">Evaluation</div>
+        <div class="gauge-client">Score d'octroi</div>
+      </div>
+
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 260 260" id="gauge_svg"></svg>
+        <div class="gauge-center">
+          <div class="gauge-num" id="res_score">000</div>
+          <div class="gauge-denom">/1000</div>
+        </div>
+        <span class="gt" style="position:absolute;left:0;bottom:24px">0</span>
+        <span class="gt" style="position:absolute;left:34px;top:84px">250</span>
+        <span class="gt" style="position:absolute;left:130px;top:6px;transform:translateX(-50%)">500</span>
+        <span class="gt" style="position:absolute;right:34px;top:84px">750</span>
+        <span class="gt" style="position:absolute;right:0;bottom:24px">1000</span>
+      </div>
+      <div id="res_notation_label" style="font-family:'Syne';font-weight:700;font-size:13px;margin-top:6px"></div>
+
+      <div class="dec-band" id="dec_band">
+        <span class="dec-icon" id="dec_icon"></span>
+        <div>
+          <div class="dec-name" id="dec_name">-</div>
+          <div class="dec-mode" id="dec_mode">-</div>
+        </div>
+      </div>
+
+      <div class="foot-row">
+        <div class="foot-item">
+          <div class="foot-val" id="res_pd">-</div>
+          <div class="foot-lbl">Prob. defaut</div>
+        </div>
+        <div class="foot-item">
+          <div class="foot-val" id="res_threshold">-</div>
+          <div class="foot-lbl">Seuil decision</div>
+        </div>
+      </div>
+
+      <div class="bureau-info" id="bureau_info" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span id="bureau_info_text"></span>
+      </div>
+    </div>
+
+    <div class="motifs-box" id="motifs_box">
+      <div class="motifs-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span class="motifs-title">Motifs</span>
+      </div>
+      <ul class="motifs-list" id="motifs_list"></ul>
+    </div>
+
+    <div class="kpi-grid" id="kpi_grid"></div>
+
+    <div class="xai-card" id="xai_card">
+      <div class="xai-hd">
+        <span class="xai-title">Pourquoi cette decision ?</span>
+      </div>
+      <div class="xai-note" id="xai_note">Calcul en cours...</div>
+      <div id="xai_bars"></div>
+      <div style="border-top:1px solid var(--line);margin-top:8px;padding-top:4px">
+        <div class="pd-row"><span>Probabilite de defaut</span><span id="xai_pd">-</span></div>
+      </div>
+    </div>
+
+    <div class="agent-box" id="agent_box">
+      <div class="agent-hd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        <span class="agent-title">Decision finale - agent bancaire</span>
+      </div>
+      <select class="agent-select" id="agent_decision" onchange="onAgentDecisionChange()">
+        <option value="">-- Selectionner la decision --</option>
+        <option value="APPROUVE">Approuver le credit</option>
+        <option value="REFUSE">Refuser le credit</option>
+        <option value="EN_ATTENTE">Mettre en attente</option>
+      </select>
+      <div id="motif_acc_wrap" style="display:none">
+        <textarea class="agent-textarea" id="motif_acceptation"
+          placeholder="Motif d'acceptation (obligatoire si le modele a refuse)..."></textarea>
+      </div>
+      <div id="motif_rej_wrap" style="display:none">
+        <textarea class="agent-textarea" id="motif_rejet"
+          placeholder="Motif de rejet (obligatoire si le modele a accepte)..."></textarea>
+      </div>
+      <button class="btn-confirm" onclick="confirmerDecision()">Confirmer la decision</button>
+      <div class="confirm-result" id="confirm_result"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function validerCIN(){
+  var input = document.getElementById("CIN");
+  input.value = input.value.replace(/\D/g,"").slice(0,8);
+  var hint = document.getElementById("cin_hint");
+  if(input.value.length === 0){
+    hint.textContent = "8 chiffres - utilise pour retrouver l historique bureau du client";
+    hint.className = "cin-hint";
+  } else if(input.value.length < 8){
+    hint.textContent = input.value.length + "/8 chiffres saisis";
+    hint.className = "cin-hint";
+  } else {
+    hint.textContent = "CIN valide";
+    hint.className = "cin-hint ok";
+  }
+}
+
+function toggleEnfants(){
+  var val = document.getElementById("Flag_Enfants").value;
+  var field = document.getElementById("field_nb_enfants");
+  field.style.display = val === "Oui" ? "flex" : "none";
+  if(val === "Non") document.getElementById("Nb_Enfants").value = 0;
+}
+function toggleExtCredit(){
+  var cb = document.getElementById("toggle_ext");
+  document.getElementById("ext_panel").classList.toggle("open", cb.checked);
+}
+
+function toggleObjetAutre(){
+  var val = document.getElementById("Objet_Pret").value;
+  document.getElementById("field_objet_autre").style.display = val === "Autre" ? "flex" : "none";
+  if(val !== "Autre") document.getElementById("Objet_Pret_Autre").value = "";
+}
+
+function calculerEcheancier(){
+  var montant = parseFloat(document.getElementById("Montant_Credit").value) || 0;
+  var mensualite = parseFloat(document.getElementById("Mensualite").value) || 0;
+  var dateDebutStr = document.getElementById("Date_Debut_Pret").value;
+
+  var nbEcheancesEl = document.getElementById("Nb_Echeances_Calc");
+  var dateFinEl = document.getElementById("Date_Fin_Prevue_Calc");
+
+  if(montant <= 0 || mensualite <= 0){
+    nbEcheancesEl.value = "--";
+    dateFinEl.value = "--";
+    return;
+  }
+
+  var nbEcheances = Math.ceil(montant / mensualite);
+  nbEcheancesEl.value = nbEcheances + " mois";
+
+  if(dateDebutStr){
+    var dateDebut = new Date(dateDebutStr);
+    var dateFin = new Date(dateDebut);
+    dateFin.setMonth(dateFin.getMonth() + nbEcheances);
+    var jj = String(dateFin.getDate()).padStart(2,"0");
+    var mm = String(dateFin.getMonth()+1).padStart(2,"0");
+    var aaaa = dateFin.getFullYear();
+    dateFinEl.value = jj + "/" + mm + "/" + aaaa;
+  } else {
+    dateFinEl.value = "-- (saisir la date de debut)";
+  }
+}
+
+function setVoiture(val){
+  document.getElementById("Possede_Voiture").value = val;
+  document.getElementById("voiture_oui").classList.toggle("on", val==="Oui");
+  document.getElementById("voiture_non").classList.toggle("on", val==="Non");
+}
+
+function buildGaugeTicks(){
+  var N=60, cx=130, cy=146, rIn=86, rOut=104;
+  var svg = document.getElementById("gauge_svg");
+  var html = "";
+  function colorFor(p){
+    var stops=[[0,[239,75,75]],[0.25,[245,166,35]],[0.5,[245,214,35]],[0.75,[159,214,35]],[1,[62,201,139]]];
+    for(var i=0;i<stops.length-1;i++){
+      var p0=stops[i][0], c0=stops[i][1], p1=stops[i+1][0], c1=stops[i+1][1];
+      if(p>=p0 && p<=p1){
+        var t=(p-p0)/(p1-p0);
+        return "rgb(" + Math.round(c0[0]+(c1[0]-c0[0])*t) + "," + Math.round(c0[1]+(c1[1]-c0[1])*t) + "," + Math.round(c0[2]+(c1[2]-c0[2])*t) + ")";
+      }
+    }
+    return "rgb(239,75,75)";
+  }
+  for(var i=0;i<N;i++){
+    var pct = i/(N-1);
+    var angle = (180 - pct*180) * Math.PI/180;
+    var x1=cx+rIn*Math.cos(angle), y1=cy-rIn*Math.sin(angle);
+    var x2=cx+rOut*Math.cos(angle), y2=cy-rOut*Math.sin(angle);
+    html += "<line class=\"gtick\" data-pct=\"" + pct.toFixed(4) + "\" x1=\"" + x1.toFixed(1) + "\" y1=\"" + y1.toFixed(1) + "\" x2=\"" + x2.toFixed(1) + "\" y2=\"" + y2.toFixed(1) + "\" stroke=\"" + colorFor(pct) + "\" stroke-width=\"3.2\" stroke-linecap=\"round\" opacity=\"0.16\"/>";
+  }
+  svg.innerHTML = html;
+}
+function setGauge(score){
+  var pct = Math.max(0, Math.min(1, score/1000));
+  var ticks = document.querySelectorAll(".gtick");
+  for(var i=0;i<ticks.length;i++){
+    var t = ticks[i];
+    var tp = parseFloat(t.getAttribute("data-pct"));
+    t.style.transition = "opacity .5s ease";
+    t.style.opacity = tp<=pct ? "1" : "0.14";
+  }
+}
+function countUp(id, target){
+  var el = document.getElementById(id);
+  var cur=0; var step=Math.max(1,Math.ceil(target/45));
+  var iv=setInterval(function(){
+    cur=Math.min(cur+step,target); el.textContent=String(cur).padStart(3,"0");
+    if(cur>=target) clearInterval(iv);
+  },16);
+}
+
+function collectFormData(){
+  function get(id){ var el = document.getElementById(id); return el && el.value ? el.value.trim() : ""; }
+  function getN(id){ return parseFloat(get(id)) || 0; }
+  function getI(id){ return parseInt(get(id)) || 0; }
+  var hasExt = document.getElementById("toggle_ext").checked;
+
+  var daysCreditExt = 0;
+  if(hasExt){
+    var rawDate = get("DAYS_CREDIT_EXT");
+    if(rawDate){
+      var d=new Date(rawDate), today=new Date();
+      daysCreditExt = Math.round((d-today)/86400000);
+    }
+  }
+
+  return {
+    CIN:                  get("CIN"),
+    Genre:                get("Genre"),
+    Age:                  getI("Age"),
+    Situation_Familiale:  get("Situation_Familiale"),
+    Nb_Membres_Famille:   getI("Nb_Membres_Famille"),
+    Nb_Enfants:           getI("Nb_Enfants"),
+    Possede_Voiture:      get("Possede_Voiture"),
+    Type_Revenu:          get("Type_Revenu"),
+    Profession:           get("Profession"),
+    Niveau_Education:     get("Niveau_Education"),
+    Revenu_Total:         getN("Revenu_Total"),
+    Type_Logement:        get("Type_Logement"),
+    Type_Contrat:         get("Type_Contrat"),
+    Type_Client:          get("Type_Client"),
+    Montant_Credit:       getN("Montant_Credit"),
+    Mensualite:           getN("Mensualite"),
+    Prix_Bien:            getN("Prix_Bien"),
+    Objet_Pret:           get("Objet_Pret") === "Autre" ? get("Objet_Pret_Autre") : get("Objet_Pret"),
+    Date_Debut_Pret:      get("Date_Debut_Pret"),
+    Nb_Echeances:         (function(){
+      var m = getN("Montant_Credit"), me = getN("Mensualite");
+      return (m > 0 && me > 0) ? Math.ceil(m / me) : 0;
+    })(),
+    Flag_Credit_Externe:  hasExt ? "Oui" : "Non",
+    AMT_CREDIT_EXT:       hasExt ? getN("AMT_CREDIT_EXT")  : 0,
+    AMT_ANNUITY_EXT:      hasExt ? getN("AMT_ANNUITY_EXT") : 0,
+    CNT_PAYMENT_EXT:      hasExt ? getI("CNT_PAYMENT_EXT") : 0,
+    DAYS_CREDIT_EXT:      hasExt ? daysCreditExt            : 0
+  };
+}
+
+function scoreColor(s){
+  if(s>=700) return "#3ec98b";
+  if(s>=500) return "#f5a623";
+  return "#ef4b4b";
+}
+
+// ── Lecture du token JWT transmis par Angular via la query string ──
+function getTokenFromUrl(){
+  return new URLSearchParams(window.location.search).get('token')
+      || localStorage.getItem('nc_access_token')
+      || localStorage.getItem('nc_jwt')
+      || localStorage.getItem('access_token')
+      || localStorage.getItem('token')
+      || '';
+}
+var JWT_TOKEN = getTokenFromUrl();
+if(!JWT_TOKEN) console.warn('Aucun token JWT reçu — les appels /predict échoueront avec 401.');
+
+/* ── Gestion expiration de session ──────────────────────────────────── */
+function showSessionExpired(){
+  if(document.getElementById('_session_overlay')) return;
+  var ov = document.createElement('div');
+  ov.id = '_session_overlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(21,34,71,.85);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = '<div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
+    +'<div style="font-size:40px;margin-bottom:16px;">⏱️</div>'
+    +'<h2 style="font-family:\'Syne\',sans-serif;color:#152247;margin-bottom:8px;font-size:20px;">Session expirée</h2>'
+    +'<p style="color:#6b7a96;font-size:13px;margin-bottom:24px;line-height:1.6;">Votre token d\'authentification a expiré.<br>Veuillez vous reconnecter pour continuer.</p>'
+    +'<button onclick="location.reload()" style="background:#152247;color:#fff;border:none;border-radius:12px;padding:12px 32px;font-family:\'Syne\',sans-serif;font-weight:700;font-size:14px;cursor:pointer;width:100%;">🔄 Recharger la page</button>'
+    +'<button onclick="localStorage.removeItem(\'nc_jwt\');localStorage.removeItem(\'nc_jwt_refresh\');location.reload()" style="background:none;border:none;color:#6b7a96;font-size:12px;margin-top:12px;cursor:pointer;text-decoration:underline;">Se déconnecter complètement</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+}
+async function tryRefreshToken(){
+  var refresh = localStorage.getItem('nc_jwt_refresh');
+  if(!refresh) return false;
+  try{
+    var r = await fetch('http://127.0.0.1:5000/api/auth/refresh',{method:'POST',headers:{'Authorization':'Bearer '+refresh,'Content-Type':'application/json'}});
+    var j = await r.json();
+    if(j.success && j.data && j.data.access_token){ localStorage.setItem('nc_jwt', j.data.access_token); JWT_TOKEN = j.data.access_token; return true; }
+  }catch(e){}
+  return false;
+}
+async function fetchWithAuth(url, options){
+  options = options || {};
+  options.headers = options.headers || {'Content-Type':'application/json','Authorization':'Bearer '+JWT_TOKEN};
+  var resp = await fetch(url, options);
+  if(resp.status === 401){
+    var ok = await tryRefreshToken();
+    if(ok){ options.headers['Authorization']='Bearer '+JWT_TOKEN; resp = await fetch(url, options); if(resp.status!==401) return resp; }
+    showSessionExpired(); throw new Error('Session expirée');
+  }
+  return resp;
+}
+
+var KPI_CFG = {
+  ratio_endettement:  {lbl:"Taux d endettement", icon:"card"},
+  ratio_ltv:          {lbl:"Ratio LTV",          icon:"bank"},
+  score_bureau:       {lbl:"Score bureau moyen", icon:"gauge"},
+  req_bureau_an:      {lbl:"Requetes bureau/an", icon:"clock"},
+  nb_membres_famille: {lbl:"Membres famille",    icon:"wallet"}
+};
+var ICONS = {
+  card:  "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"1\" y=\"4\" width=\"22\" height=\"16\" rx=\"2\"/><line x1=\"1\" y1=\"10\" x2=\"23\" y2=\"10\"/></svg>",
+  bank:  "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"3\" y1=\"21\" x2=\"21\" y2=\"21\"/><line x1=\"6\" y1=\"18\" x2=\"6\" y2=\"11\"/><line x1=\"10\" y1=\"18\" x2=\"10\" y2=\"11\"/><line x1=\"14\" y1=\"18\" x2=\"14\" y2=\"11\"/><line x1=\"18\" y1=\"18\" x2=\"18\" y2=\"11\"/><polygon points=\"12 2 21 8 3 8\"/></svg>",
+  gauge: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 14 16 10\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/></svg>",
+  clock: "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"13\" r=\"8\"/><line x1=\"12\" y1=\"9\" x2=\"12\" y2=\"13\"/><line x1=\"9\" y1=\"3\" x2=\"15\" y2=\"3\"/></svg>",
+  wallet:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 12V7H5a2 2 0 0 1 0-4h14v4\"/><path d=\"M3 5v14a2 2 0 0 0 2 2h16v-5\"/><path d=\"M18 12a2 2 0 0 0 0 4h4v-4Z\"/></svg>"
+};
+
+function renderResult(res){
+  document.getElementById("empty").style.display = "none";
+  document.getElementById("gauge_card").style.display = "flex";
+
+  var score = res.score, notation = res.notation, label = res.label;
+  var decision = res.decision, pd = res.pd_value, thr = res.threshold;
+  var indics = res.indicateurs || {};
+  var color = scoreColor(score);
+
+  setTimeout(function(){ setGauge(score); }, 80);
+  countUp("res_score", score);
+
+  var notaLbl = document.getElementById("res_notation_label");
+  notaLbl.textContent = notation + " - " + label;
+  notaLbl.style.color = color;
+
+  var dmap = {
+    APPROUVE:       {icon:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"/></svg>", txt:"Approuve"},
+    REFUSE:         {icon:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/></svg>", txt:"Refuse"},
+    REVUE_MANUELLE: {icon:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><line x1=\"21\" y1=\"21\" x2=\"16.65\" y2=\"16.65\"/></svg>", txt:"Revue manuelle"}
+  };
+  var dm = dmap[decision] || dmap.REFUSE;
+  var band = document.getElementById("dec_band");
+  band.className = "dec-band " + decision;
+  document.getElementById("dec_icon").innerHTML = dm.icon;
+  document.getElementById("dec_name").textContent = dm.txt;
+  var mode = "";
+  if(res.mode_decision === "REGLE_METIER") mode = "Decision par regle metier";
+  else if(res.mode_decision === "MODELE_ML") mode = "Decision par modele ML";
+  document.getElementById("dec_mode").textContent = mode;
+
+  document.getElementById("res_pd").textContent = (pd*100).toFixed(2) + "%";
+  document.getElementById("res_threshold").textContent = (thr*100).toFixed(1) + "%";
+
+  var mBox = document.getElementById("motifs_box");
+  var mList = document.getElementById("motifs_list");
+  mList.innerHTML = "";
+  if(res.motifs && res.motifs.length){
+    for(var mi=0; mi<res.motifs.length; mi++){
+      var li=document.createElement("li"); li.textContent=res.motifs[mi]; mList.appendChild(li);
+    }
+    mBox.style.display = "block";
+  } else { mBox.style.display = "none"; }
+
+  var grid = document.getElementById("kpi_grid");
+  grid.style.display = "grid";
+  grid.innerHTML = "";
+  for(var k in indics){
+    var v = indics[k];
+    var cfg = KPI_CFG[k] || {lbl:k, icon:"gauge"};
+    var st  = v.status === "OK" ? "ok" : "bad";
+    var bg  = st==="ok" ? "var(--ok-soft)" : "var(--danger-soft)";
+    var fg  = st==="ok" ? "#3ec98b" : "#ef4b4b";
+    grid.insertAdjacentHTML("beforeend",
+      "<div class=\"kpi-card\">" +
+        "<div class=\"kpi-top\">" +
+          "<div class=\"kpi-icon\" style=\"background:" + bg + ";color:" + fg + "\">" + ICONS[cfg.icon] + "</div>" +
+          "<span class=\"kpi-badge " + st + "\">" + (st==="ok"?"OK":"Attention") + "</span>" +
+        "</div>" +
+        "<div class=\"kpi-val\">" + v.valeur + " " + (v.unite||"") + "</div>" +
+        "<div class=\"kpi-name\">" + cfg.lbl + "</div>" +
+      "</div>");
+  }
+
+  var bi = document.getElementById("bureau_info");
+  var bureauInfo = res.scores_bureau_info;
+  if(bureauInfo){
+    bi.style.display = "flex";
+    if(bureauInfo.client_trouve){
+      document.getElementById("bureau_info_text").innerHTML =
+        "Score bureau reel trouve via <strong>" + bureauInfo.client_code + "</strong> (" + bureauInfo.source + ")";
+    } else {
+      document.getElementById("bureau_info_text").innerHTML =
+        "Aucun historique trouve pour ce CIN - score bureau neutre (600) applique par defaut";
+    }
+  }
+
+  _currentDecisionId    = res.decision_id || null;
+  _currentDecisionModel = decision;
+  document.getElementById("agent_decision").value = "";
+  document.getElementById("motif_acceptation").value = "";
+  document.getElementById("motif_rejet").value = "";
+  document.getElementById("motif_acc_wrap").style.display = "none";
+  document.getElementById("motif_rej_wrap").style.display = "none";
+  document.getElementById("confirm_result").style.display = "none";
+  document.getElementById("agent_box").style.display = "block";
+}
+
+async function predict(){
+  var cin = document.getElementById("CIN").value;
+  if(cin.length !== 8){
+    alert("Le CIN doit contenir exactement 8 chiffres.");
+    return;
+  }
+  if(!document.getElementById("Possede_Voiture").value){
+    alert("Veuillez preciser si le client possede une voiture.");
+    return;
+  }
+
+  var btn = document.getElementById("btn_submit");
+  btn.disabled = true;
+  document.getElementById("spinner").style.display = "block";
+  document.getElementById("btn_icon").style.display = "none";
+  document.getElementById("btn_label").textContent = "Calcul en cours...";
+
+  var data = collectFormData();
+
+  try{
+    var resp = await fetch("http://127.0.0.1:5000/api/octroi/predict", {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "Authorization":"Bearer " + JWT_TOKEN},
+      body:JSON.stringify(data)
+    });
+    var json = await resp.json();
+    if(json.success && json.data){
+      renderResult(json.data);
+      explainDecision(data);
+    } else {
+      alert("Erreur API : " + (json.message || JSON.stringify(json)));
+    }
+  }catch(err){
+    alert("Impossible de contacter le serveur Flask (port 5000).\n" + err);
+  }finally{
+    btn.disabled = false;
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("btn_icon").style.display = "block";
+    document.getElementById("btn_label").textContent = "Calculer le score de risque";
+  }
+}
+
+var _currentDecisionId = null, _currentDecisionModel = null;
+
+function onAgentDecisionChange(){
+  var val = document.getElementById("agent_decision").value;
+  var modele = _currentDecisionModel || "";
+  document.getElementById("motif_acc_wrap").style.display = (val==="APPROUVE" && modele==="REFUSE") ? "block" : "none";
+  document.getElementById("motif_rej_wrap").style.display = (val==="REFUSE" && modele==="APPROUVE") ? "block" : "none";
+  if(val==="EN_ATTENTE"){
+    document.getElementById("motif_acc_wrap").style.display = "none";
+    document.getElementById("motif_rej_wrap").style.display = "none";
+  }
+}
+
+async function confirmerDecision(){
+  if(!_currentDecisionId){ alert("Aucun dossier a confirmer."); return; }
+  var decisionAgent = document.getElementById("agent_decision").value;
+  if(!decisionAgent){ alert("Veuillez selectionner une decision."); return; }
+  var motifAcc = document.getElementById("motif_acceptation").value.trim();
+  var motifRej = document.getElementById("motif_rejet").value.trim();
+  var resDiv = document.getElementById("confirm_result");
+
+  if(decisionAgent === "EN_ATTENTE"){
+    resDiv.style.display = "block";
+    resDiv.className = "confirm-result ok";
+    resDiv.innerHTML = "Dossier conserve <strong>en attente</strong>. Retrouvez-le dans la liste des dossiers en attente.";
+    return;
+  }
+
+  var resp = await fetch("http://127.0.0.1:5000/api/octroi/confirmer", {
+    method:"POST",
+    headers:{"Content-Type":"application/json", "Authorization":"Bearer " + JWT_TOKEN},
+    body: JSON.stringify({
+      decision_id: _currentDecisionId, decision_agent: decisionAgent,
+      motif_acceptation: motifAcc||null, motif_rejet: motifRej||null, agent_id:"agent_001"
+    })
+  });
+  var json = await resp.json();
+  resDiv.style.display = "block";
+  if(json.success){
+    var r = json.data, override = !r.flag_agent_confirm;
+    resDiv.className = "confirm-result ok";
+    resDiv.innerHTML = "Decision enregistree : <strong>" + r.decision_agent + "</strong>" +
+      (override?" <span class=\"override-badge\">OVERRIDE</span>":"") +
+      (r.motif_acceptation?("<br>Motif acceptation : " + r.motif_acceptation):"") +
+      (r.motif_rejet?("<br>Motif rejet : " + r.motif_rejet):"");
+    // Retirer ce dossier de la liste en attente si le modal est ouvert
+    _dossiersCache = _dossiersCache.filter(function(d){ return d.Id !== _currentDecisionId; });
+    if(document.getElementById("doss_overlay").classList.contains("on")) drawDossiers(_dossiersCache);
+  } else {
+    resDiv.className = "confirm-result error";
+    resDiv.textContent = (json.message || "Erreur lors de la confirmation.");
+  }
+}
+
+async function explainDecision(data){
+  var box = document.getElementById("xai_card");
+  box.style.display = "block";
+  document.getElementById("xai_note").textContent = "Analyse en cours...";
+  document.getElementById("xai_bars").innerHTML = "";
+
+  try{
+    var resp = await fetch("http://127.0.0.1:5000/api/octroi/explain/shap?top_n=6", {
+      method:"POST",
+      headers:{"Content-Type":"application/json", "Authorization":"Bearer " + JWT_TOKEN},
+      body:JSON.stringify(data)
+    });
+    var json = await resp.json();
+    if(!json.success){ box.style.display="none"; return; }
+    var r = json.data;
+    var shapVals = r.shap_values || [];
+
+    var risques = [];
+    var protects = [];
+    for(var i=0;i<shapVals.length;i++){
+      if(shapVals[i].direction === "risque") risques.push(shapVals[i].feature);
+      else protects.push(shapVals[i].feature);
+    }
+    risques = risques.slice(0,2);
+    protects = protects.slice(0,2);
+
+    var phrase = "";
+    if(risques.length) phrase += "Points d attention : " + risques.join(", ") + " augmentent le risque. ";
+    if(protects.length) phrase += "Points positifs : " + protects.join(", ") + " jouent en faveur du client.";
+    document.getElementById("xai_note").textContent = phrase || r.explication || "";
+    document.getElementById("xai_pd").textContent = (r.pd_value*100).toFixed(2)+"%";
+
+    var maxVal = 0.001;
+    for(var j=0;j<shapVals.length;j++){
+      var av = Math.abs(shapVals[j].impact || shapVals[j].shap_value || 0);
+      if(av > maxVal) maxVal = av;
+    }
+
+    var barsHtml = "";
+    for(var m=0;m<shapVals.length;m++){
+      var f = shapVals[m];
+      var val = Math.abs(f.impact || f.shap_value || 0);
+      var risk = f.direction === "risque";
+      var pct = Math.round(val/maxVal*100);
+      barsHtml += "<div class=\"frow\">" +
+        "<span class=\"frow-lbl\" title=\"" + f.feature + "\">" + f.feature + "</span>" +
+        "<div class=\"frow-track\"><div class=\"frow-fill " + (risk?"risk":"prot") + "\" style=\"width:" + pct + "%\"></div></div>" +
+        "<span class=\"frow-tag " + (risk?"risk":"prot") + "\">" + (risk?"Risque":"Protection") + "</span>" +
+      "</div>";
+    }
+    document.getElementById("xai_bars").innerHTML = barsHtml;
+  }catch(e){ box.style.display="none"; }
+}
+
+buildGaugeTicks();
+
+/* ═══════════════════════════════════════════════════════════════
+   DOSSIERS EN ATTENTE — Modal
+═══════════════════════════════════════════════════════════════ */
+var _dossiersCache = [];
+var _selectedDossier = null;
+
+function scoreColor(s){
+  if(s>=700) return '#3ec98b';
+  if(s>=500) return '#f5a623';
+  return '#ef4b4b';
+}
+function notaColor(n){
+  var m={AAA:'#3ec98b',AA:'#5ed79b',A:'#8fe0b6',BBB:'#89B4E8',BB:'#f5a623',B:'#f0832a',CCC:'#ef4b4b'};
+  return m[n]||'#888';
+}
+function decColor(d){
+  if(d==='APPROUVE') return '#3ec98b';
+  if(d==='REFUSE') return '#ef4b4b';
+  if(d==='REVUE_MANUELLE') return '#f5a623';
+  return '#89B4E8';
+}
+
+async function openDossiersModal(){
+  document.getElementById('doss_overlay').classList.add('on');
+  await loadDossiers();
+}
+function closeDossiersModal(e){
+  if(!e || e.target===document.getElementById('doss_overlay') ||
+     e.currentTarget.classList.contains('doss-modal-close'))
+    document.getElementById('doss_overlay').classList.remove('on');
+}
+
+async function loadDossiers(){
+  document.getElementById('doss_body').innerHTML =
+    '<div class="doss-loading"><div class="doss-spinner"></div>Chargement des dossiers…</div>';
+  document.getElementById('doss_sub').textContent = 'Chargement…';
+  try{
+    var resp = await fetch('http://127.0.0.1:5000/api/octroi/dossiers-en-attente?limit=100',{
+      headers:{'Authorization':'Bearer '+JWT_TOKEN}
+    });
+    var json = await resp.json();
+    _dossiersCache = json.success ? (json.data.dossiers||[]) : [];
+    drawDossiers(_dossiersCache);
+    updateBadge(_dossiersCache.length);
+  }catch(err){
+    document.getElementById('doss_body').innerHTML =
+      '<div class="doss-loading" style="color:var(--danger)">Erreur de connexion au serveur.</div>';
+  }
+}
+
+function updateBadge(n){
+  var b = document.getElementById('hdr_badge');
+  b.textContent = n;
+  b.style.display = n>0 ? 'inline-flex' : 'none';
+}
+
+function drawDossiers(list){
+  var sub = document.getElementById('doss_sub');
+  if(!list.length){
+    document.getElementById('doss_body').innerHTML =
+      '<div class="doss-loading" style="color:var(--g400)">Aucun dossier en attente.</div>';
+    sub.textContent = '0 dossier';
+    return;
+  }
+  sub.textContent = list.length + ' dossier' + (list.length>1?'s':'') + ' en attente';
+
+  var rows = list.map(function(d,i){
+    var sc = d.Score||0, nc = notaColor(d.Notation), dc = decColor(d.DecisionModele);
+    var dt = d.DateDemande ? new Date(d.DateDemande).toLocaleString('fr-FR',
+      {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    var cli = d.DonneesClient || {};
+    var cin = cli.CIN || '—';
+    return '<tr onclick="selectDossier('+i+')" id="doss_row_'+i+'">' +
+      '<td style="color:var(--g400);font-size:11px">'+d.Id+'</td>' +
+      '<td style="font-size:11.5px;color:var(--g500)">'+dt+'</td>' +
+      '<td>'+cin+'</td>' +
+      '<td><span class="doss-sc" style="background:'+scoreColor(sc)+'1f;color:'+scoreColor(sc)+'">'+sc+'</span></td>' +
+      '<td><span class="doss-nota" style="background:'+nc+'1f;color:'+nc+'">'+(d.Notation||'—')+'</span></td>' +
+      '<td><span class="doss-dec" style="background:'+dc+'1f;color:'+dc+'">'+(d.DecisionModele||'—').replace('_',' ')+'</span></td>' +
+      '<td style="font-size:11.5px;color:var(--g500)">'+((d.ProbabiliteDefaut||0)*100).toFixed(2)+'%</td>' +
+      '<td><button onclick="event.stopPropagation();selectDossier('+i+')" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:5px 14px;font-size:11px;font-family:\'Syne\';font-weight:700;cursor:pointer;">Traiter</button></td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('doss_body').innerHTML =
+    '<table class="doss-table">' +
+    '<thead><tr><th>#ID</th><th>Date demande</th><th>CIN</th><th>Score</th>' +
+    '<th>Notation</th><th>Décision modèle</th><th>PD %</th><th></th></tr></thead>' +
+    '<tbody>'+rows+'</tbody>' +
+    '</table>' +
+    '<div id="doss_detail_area"></div>';
+}
+
+function selectDossier(idx){
+  _selectedDossier = _dossiersCache[idx];
+  document.querySelectorAll('.doss-table tbody tr').forEach(function(r){ r.classList.remove('selected'); });
+  var row = document.getElementById('doss_row_'+idx);
+  if(row) row.classList.add('selected');
+
+  var d   = _selectedDossier;
+  var cli = d.DonneesClient || {};
+  var sc  = d.Score||0;
+  var motifsList = '';
+  if(Array.isArray(d.MotifsModele) && d.MotifsModele.length){
+    motifsList = '<div class="doss-motifs"><div class="doss-motifs-lbl">Motifs du modèle</div>' +
+      '<ul>'+d.MotifsModele.map(function(m){return '<li>'+m+'</li>';}).join('')+'</ul></div>';
+  }
+
+  var fields = [
+    {lbl:'Genre',           val: cli.Genre||'—'},
+    {lbl:'Age',             val: (cli.Age||'—')+' ans'},
+    {lbl:'Situation fam.',  val: cli.Situation_Familiale||'—'},
+    {lbl:'Type contrat',    val: cli.Type_Contrat||'—'},
+    {lbl:'Type revenu',     val: cli.Type_Revenu||'—'},
+    {lbl:'Revenu mensuel',  val: cli.Revenu_Total ? Number(cli.Revenu_Total).toLocaleString('fr-FR')+' DT' : '—'},
+    {lbl:'Montant crédit',  val: cli.Montant_Credit ? Number(cli.Montant_Credit).toLocaleString('fr-FR')+' DT' : '—'},
+    {lbl:'Mensualité',      val: cli.Mensualite ? Number(cli.Mensualite).toLocaleString('fr-FR')+' DT' : '—'},
+    {lbl:'Logement',        val: cli.Type_Logement||'—'},
+  ];
+
+  var fieldsHtml = fields.map(function(f){
+    return '<div class="doss-dfield"><div class="doss-dfield-lbl">'+f.lbl+'</div>' +
+           '<div class="doss-dfield-val">'+f.val+'</div></div>';
+  }).join('');
+
+  var decColor2 = decColor(d.DecisionModele);
+
+  document.getElementById('doss_detail_area').innerHTML =
+    '<div class="doss-detail">' +
+      '<div class="doss-detail-hd">' +
+        '<div style="width:10px;height:10px;border-radius:50%;background:var(--warn);flex-shrink:0"></div>' +
+        '<span class="doss-detail-title">Détail du dossier</span>' +
+        '<span class="doss-detail-id">ID #'+d.Id+' &nbsp;·&nbsp; ' +
+          '<span style="font-weight:700;color:'+scoreColor(sc)+'">Score '+sc+'</span>' +
+          ' &nbsp;·&nbsp; ' +
+          '<span style="font-weight:700;color:'+decColor2+'">'+( (d.DecisionModele||'').replace('_',' '))+'</span>' +
+        '</span>' +
+      '</div>' +
+      '<div class="doss-detail-grid">'+fieldsHtml+'</div>' +
+      motifsList +
+      '<div class="doss-actions">' +
+        '<button class="doss-btn-ok" onclick="confirmerDepuisModal(\'APPROUVE\')">✓ Approuver</button>' +
+        '<button class="doss-btn-ko" onclick="confirmerDepuisModal(\'REFUSE\')">✗ Refuser</button>' +
+      '</div>' +
+      '<div class="doss-confirm-msg" id="doss_confirm_msg"></div>' +
+    '</div>';
+
+  document.getElementById('doss_detail_area').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+async function confirmerDepuisModal(decision){
+  if(!_selectedDossier){ return; }
+  var id     = _selectedDossier.Id;
+  var modele = _selectedDossier.DecisionModele || '';
+  var msg    = document.getElementById('doss_confirm_msg');
+
+  var motifAcc = null, motifRej = null;
+  if(decision==='APPROUVE' && modele==='REFUSE'){
+    motifAcc = prompt('Motif d\'acceptation (override obligatoire) :');
+    if(!motifAcc){ return; }
+  }
+  if(decision==='REFUSE' && modele==='APPROUVE'){
+    motifRej = prompt('Motif de rejet (override obligatoire) :');
+    if(!motifRej){ return; }
+  }
+
+  try{
+    var resp = await fetch('http://127.0.0.1:5000/api/octroi/confirmer',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+JWT_TOKEN},
+      body: JSON.stringify({
+        decision_id: id, decision_agent: decision,
+        motif_acceptation: motifAcc, motif_rejet: motifRej, agent_id:'agent_001'
+      })
+    });
+    var json = await resp.json();
+    msg.style.display = 'block';
+    if(json.success){
+      msg.className = 'doss-confirm-msg ok';
+      msg.textContent = 'Dossier #'+id+' — décision enregistrée : '+decision;
+      _dossiersCache = _dossiersCache.filter(function(d){ return d.Id !== id; });
+      updateBadge(_dossiersCache.length);
+      setTimeout(function(){ drawDossiers(_dossiersCache); }, 900);
+    } else {
+      msg.className = 'doss-confirm-msg err';
+      msg.textContent = json.message || 'Erreur lors de la confirmation.';
+    }
+  }catch(err){
+    msg.style.display = 'block';
+    msg.className = 'doss-confirm-msg err';
+    msg.textContent = 'Erreur réseau.';
+  }
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape') document.getElementById('doss_overlay').classList.remove('on');
+});
+
+// Charger le badge au démarrage
+(async function(){
+  try{
+    var r = await fetch('http://127.0.0.1:5000/api/octroi/dossiers-en-attente?limit=100',{
+      headers:{'Authorization':'Bearer '+JWT_TOKEN}
+    });
+    var j = await r.json();
+    if(j.success) updateBadge((j.data.dossiers||[]).length);
+  }catch(e){}
+})();
+</script>
+
+</body>
+</html>

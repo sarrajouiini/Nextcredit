@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextCredit — Clients à risque élevé</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#152247;--navy-light:#1e3060;
+  --sky:#89B4E8;--sky-light:#c4d9f5;--sky-dim:#e8f1fb;
+  --bg:#f4f6fb;--card:#ffffff;--line:#eaeef6;
+  --g500:#6b7488;--g400:#9aa1b3;
+  --ok:#3ec98b;--ok-soft:#e6f9ef;
+  --warn:#f5a623;--warn-soft:#fef3df;
+  --danger:#ef4b4b;--danger-soft:#fde9e9;
+  --r-card:18px;--r-md:12px;--r-sm:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+
+/* ── LAYOUT ── */
+.shell{flex:1;display:flex;overflow:hidden;}
+
+/* ── LEFT PANEL ── */
+.left-panel{width:440px;flex-shrink:0;border-right:1px solid var(--line);display:flex;flex-direction:column;background:#fff;}
+.lp-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;}
+.lp-head h2{font-family:'Syne';font-size:13px;font-weight:700;color:var(--navy);flex:1;}
+.lp-filter{display:flex;gap:6px;}
+.filter-btn{padding:5px 11px;border-radius:20px;border:1px solid var(--line);font-size:11px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--g500);transition:.12s;}
+.filter-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.lp-refresh{background:none;border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:11px;color:var(--g500);cursor:pointer;}
+.lp-refresh:hover{border-color:var(--sky);color:var(--navy);}
+.lp-body{flex:1;overflow-y:auto;}
+
+.risk-table{width:100%;border-collapse:collapse;}
+.risk-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--g400);padding:9px 14px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;text-align:left;}
+.risk-table td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:middle;}
+.risk-table tr:hover td{background:var(--sky-dim);cursor:pointer;}
+.risk-table tr.selected td{background:#fde9e9;border-left:3px solid var(--danger);}
+.risk-table tr.selected td:first-child{border-left:3px solid var(--danger);}
+
+.client-code{font-family:'Syne';font-size:11px;font-weight:700;color:var(--navy);}
+.score-chip{display:inline-block;padding:3px 9px;border-radius:20px;font-family:'Syne';font-size:11.5px;font-weight:700;}
+.nota-chip{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;}
+.dbadge{display:inline-block;padding:4px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;}
+.dbadge.ALERTE{background:#fff3df;color:var(--warn);}
+.dbadge.CONTENTIEUX{background:var(--danger-soft);color:var(--danger);}
+.dbadge.SURVEILLER{background:#e8f1fb;color:var(--sky);}
+
+.lp-foot{padding:10px 18px;border-top:1px solid var(--line);font-size:11px;color:var(--g400);background:var(--bg);display:flex;gap:16px;}
+.lp-stat{display:flex;align-items:center;gap:5px;}
+.lp-stat-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── RIGHT PANEL ── */
+.right-panel{flex:1;overflow-y:auto;padding:24px;}
+.rp-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;color:var(--g400);}
+.rp-empty svg{opacity:.2;}
+.rp-empty p{font-size:13px;text-align:center;}
+
+/* ── SCORING DETAIL ── */
+.det-topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.det-code{font-family:'Syne';font-size:22px;font-weight:800;color:var(--navy);}
+.det-topbar .dbadge{font-size:12px;padding:6px 14px;}
+
+/* Grid */
+.det-grid{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+
+/* KPI Grid */
+.kpi-section{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:20px;margin-bottom:18px;}
+.sec-title{font-family:'Syne';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--sky);margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.kpi-card{background:var(--bg);border-radius:var(--r-md);padding:14px 16px;display:flex;flex-direction:column;gap:4px;}
+.kpi-val{font-family:'Syne';font-size:20px;font-weight:800;line-height:1;letter-spacing:-.3px;}
+.kpi-unit{font-size:11px;color:var(--g400);}
+.kpi-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--g500);margin-top:2px;}
+
+/* Gauge scoring card */
+.scoring-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;position:sticky;top:0;}
+.gauge-wrap{position:relative;width:200px;height:115px;}
+.gauge-wrap svg{width:200px;height:200px;position:absolute;top:0;left:0;}
+.gauge-center{position:absolute;bottom:8px;left:0;right:0;display:flex;flex-direction:column;align-items:center;}
+.gauge-num{font-family:'Syne';font-size:34px;font-weight:800;line-height:1;}
+.gauge-denom{font-size:10px;color:var(--g400);margin-top:1px;}
+.score-meta{display:flex;gap:24px;justify-content:center;width:100%;}
+.sm-item{text-align:center;}
+.sm-val{font-family:'Syne';font-size:14px;font-weight:700;}
+.sm-lbl{font-size:10px;color:var(--g400);margin-top:1px;}
+.dec-band{width:100%;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--r-md);}
+.dec-band.ALERTE{background:var(--warn-soft);}
+.dec-band.CONTENTIEUX{background:var(--danger-soft);}
+.dec-band.SURVEILLER{background:var(--sky-dim);}
+.dec-band.MAINTENIR{background:var(--ok-soft);}
+.dec-band .dec-lbl{font-family:'Syne';font-size:14px;font-weight:700;}
+.dec-band.ALERTE .dec-lbl{color:var(--warn);}
+.dec-band.CONTENTIEUX .dec-lbl{color:var(--danger);}
+.dec-band.SURVEILLER .dec-lbl{color:var(--sky);}
+.dec-band.MAINTENIR .dec-lbl{color:var(--ok);}
+
+/* Bâle section */
+.bale-section{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;margin-bottom:18px;}
+.bale-row{display:flex;gap:12px;margin-top:2px;}
+.bale-item{flex:1;background:var(--bg);border-radius:var(--r-sm);padding:12px 14px;}
+.bale-val{font-family:'Syne';font-size:16px;font-weight:700;}
+.bale-lbl{font-size:10px;color:var(--g400);margin-top:2px;}
+
+/* Recommandations */
+.reco-section{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;margin-bottom:18px;}
+.reco-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.5;}
+.reco-item:last-child{border-bottom:none;}
+.reco-icon{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--warn-soft);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px;}
+
+/* PD bar */
+.pd-bar-wrap{width:100%;margin-top:4px;}
+.pd-bar-bg{height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+.pd-bar-fill{height:100%;border-radius:3px;transition:width .6s;}
+.pd-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--g400);margin-top:3px;}
+
+/* Spinner */
+.loading-msg{display:flex;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--g400);font-size:13px;}
+.spinner{width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--sky);border-radius:50%;animation:rot .6s linear infinite;}
+@keyframes rot{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+
+<div class="shell">
+
+  <!-- ── LISTE ── -->
+  <div class="left-panel">
+    <div class="lp-head">
+      <h2>Portefeuille à risque</h2>
+      <div class="lp-filter">
+        <button class="filter-btn active" onclick="setFilter('all',this)">Tous</button>
+        <button class="filter-btn" onclick="setFilter('ALERTE',this)">Alerte</button>
+        <button class="filter-btn" onclick="setFilter('CONTENTIEUX',this)">Contentieux</button>
+      </div>
+      <button class="lp-refresh" onclick="loadClients()">↻</button>
+    </div>
+    <div class="lp-body">
+      <table class="risk-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Score</th>
+            <th>Nota.</th>
+            <th>Décision</th>
+          </tr>
+        </thead>
+        <tbody id="risk_tbody">
+          <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--g400);">Chargement…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="lp-foot" id="lp_foot">
+      <span class="lp-stat"><span class="lp-stat-dot" style="background:var(--warn)"></span>Alerte : <strong id="cnt_alerte">0</strong></span>
+      <span class="lp-stat"><span class="lp-stat-dot" style="background:var(--danger)"></span>Contentieux : <strong id="cnt_cont">0</strong></span>
+      <span class="lp-stat" style="margin-left:auto"><strong id="cnt_total">0</strong> clients <span id="badge_count" style="display:none"></span></span>
+    </div>
+  </div>
+
+  <!-- ── DÉTAIL SCORING ── -->
+  <div class="right-panel" id="right_panel">
+    <div class="rp-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+      <p>Cliquez sur un client pour afficher<br>son scoring comportemental complet</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BASE = 'http://127.0.0.1:5000/api';
+
+function getToken(){
+  return new URLSearchParams(window.location.search).get('token')
+      || localStorage.getItem('nc_access_token')
+      || localStorage.getItem('nc_jwt')
+      || localStorage.getItem('access_token')
+      || localStorage.getItem('token')
+      || '';
+}
+function ah(){
+  const t = getToken();
+  return Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {});
+}
+
+/* ── Session expirée ── */
+function showSessionExpired(){
+  if(document.getElementById('_so')) return;
+  const o=document.createElement('div'); o.id='_so';
+  o.style.cssText='position:fixed;inset:0;background:rgba(21,34,71,.85);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  o.innerHTML='<div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;max-width:340px;"><div style="font-size:36px;margin-bottom:12px;">⏱️</div><h2 style="font-family:Syne,sans-serif;color:#152247;margin-bottom:8px;">Session expirée</h2><p style="color:#6b7a96;font-size:13px;margin-bottom:20px;">Veuillez vous reconnecter.</p><button onclick="location.reload()" style="background:#152247;color:#fff;border:none;border-radius:12px;padding:12px 32px;font-family:Syne,sans-serif;font-weight:700;font-size:14px;cursor:pointer;width:100%;">🔄 Recharger</button></div>';
+  document.body.appendChild(o);
+}
+async function apiFetch(url, options={}){
+  options.headers = options.headers || ah();
+  const r = await fetch(url, options);
+  if(r.status===401){ showSessionExpired(); throw new Error('401'); }
+  return r;
+}
+
+/* ── Couleurs ── */
+function scoreColor(s){ return s>=800?'#3ec98b':s>=650?'#8fe0b6':s>=500?'#89B4E8':s>=350?'#f5a623':'#ef4b4b'; }
+const NOTA_COL = {AAA:'#3ec98b',AA:'#5ed79b',A:'#8fe0b6',BBB:'#89B4E8',BB:'#f5a623',B:'#f0832a',CCC:'#ef4b4b'};
+
+/* ── DONNÉES ── */
+let allClients   = [];
+let activeFilter = 'all';
+let _abortCtrl   = null;
+
+async function loadClients(){
+  try{
+    const r = await apiFetch(`${BASE}/comportement/liste-a-risque?limit=30&top_n=30`);
+    const j = await r.json();
+    allClients = j.success ? (j.data.clients || []) : [];
+    updateStats();
+    renderTable();
+  }catch(e){ console.error(e); }
+}
+
+function updateStats(){
+  const al = allClients.filter(c=>c.decision==='ALERTE').length;
+  const co = allClients.filter(c=>c.decision==='CONTENTIEUX').length;
+  document.getElementById('cnt_alerte').textContent  = al;
+  document.getElementById('cnt_cont').textContent    = co;
+  document.getElementById('cnt_total').textContent   = allClients.length;
+  document.getElementById('badge_count').textContent = allClients.length;
+}
+
+function setFilter(f, btn){
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function renderTable(){
+  const tbody = document.getElementById('risk_tbody');
+  const list  = activeFilter === 'all' ? allClients : allClients.filter(c=>c.decision===activeFilter);
+
+  if(!list.length){
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--g400);">Aucun client</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map((c,i)=>{
+    const sc = c.score ?? 0;
+    const col = scoreColor(sc);
+    const nc  = NOTA_COL[c.notation]||'#888';
+    const dec = c.decision||'—';
+    return `<tr id="rrow_${i}" onclick="selectClient('${c.client_code||c.code}',${i})">
+      <td><div class="client-code">${c.client_code||c.code||'—'}</div></td>
+      <td><span class="score-chip" id="sc_${i}" style="background:${col}1f;color:${col}">${sc}</span></td>
+      <td><span class="nota-chip" id="nota_${i}" style="background:${nc}1f;color:${nc}">${c.notation||'—'}</span></td>
+      <td><span class="dbadge ${dec}" id="dec_${i}">${dec}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── SÉLECTION CLIENT ── */
+async function selectClient(code, rowIdx){
+  document.querySelectorAll('.risk-table tbody tr').forEach(r=>r.classList.remove('selected'));
+  document.getElementById('rrow_'+rowIdx)?.classList.add('selected');
+
+  // Annuler requête précédente
+  if(_abortCtrl){ _abortCtrl.abort(); }
+  _abortCtrl = new AbortController();
+  const signal = _abortCtrl.signal;
+
+  // Affichage loading
+  document.getElementById('right_panel').innerHTML = `
+    <div class="loading-msg"><div class="spinner"></div>Analyse comportementale de ${code}…</div>`;
+
+  try{
+    const r = await apiFetch(`${BASE}/comportement/predict`, {
+      method:'POST', headers:ah(),
+      body: JSON.stringify({client_code: code}),
+      signal
+    });
+    if(signal.aborted) return;
+    const j = await r.json();
+    if(j.success && j.data){
+      renderScoringDetail(j.data, code, rowIdx);
+      // Sync badges dans la liste
+      const d = j.data;
+      const col = scoreColor(d.score||0);
+      const nc  = NOTA_COL[d.notation]||'#888';
+      const sc  = document.getElementById('sc_'+rowIdx);
+      const nota= document.getElementById('nota_'+rowIdx);
+      const dec = document.getElementById('dec_'+rowIdx);
+      if(sc)  { sc.style.background=col+'1f'; sc.style.color=col; sc.textContent=d.score; }
+      if(nota){ nota.style.background=nc+'1f'; nota.style.color=nc; nota.textContent=d.notation||'—'; }
+      if(dec) { dec.className='dbadge '+(d.decision||''); dec.textContent=d.decision||'—'; }
+    } else {
+      document.getElementById('right_panel').innerHTML =
+        `<div class="rp-empty"><p>Erreur : ${j.message||'Données non disponibles'}</p></div>`;
+    }
+  }catch(e){
+    if(e.message==='401') return;
+    if(e.name==='AbortError') return;
+    document.getElementById('right_panel').innerHTML =
+      `<div class="rp-empty"><p>Erreur de chargement pour ${code}</p></div>`;
+  }
+}
+
+/* ── RENDER DETAIL ── */
+function renderScoringDetail(d, code, rowIdx){
+  const sc    = d.score ?? 0;
+  const col   = scoreColor(sc);
+  const nc    = NOTA_COL[d.notation] || '#888';
+  const dec   = d.decision || '—';
+  const pd    = d.pd_value != null ? (d.pd_value*100).toFixed(2) : (d.pd_pct ?? '—');
+  const seuil = d.threshold != null ? Math.round(d.threshold*100) : (d.seuil_pct ?? 50);
+  const inds  = d.indicateurs || {};       // { taux_paiement:{valeur,unite,status}, taux_retard:{...}, retard_externe:{...}, score_bureau:{...}, pression_fin:{...} }
+  const bale  = d.recouvrement || {};       // { lgd_pct, ead_value, score_recouvrement }
+  const info  = d.client_info || {};
+  const recos = (d.recommandations || []).map(r => typeof r === 'string' ? r : (r.texte || ''));
+  const iv = (key) => inds[key] && inds[key].valeur != null ? inds[key].valeur : null;
+
+  // Jauge
+  const pct   = Math.max(0,Math.min(1,sc/1000));
+  const CX=100,CY=100,R=78;
+  let ticks='';
+  for(let i=0;i<=28;i++){
+    const tp=i/28, a=Math.PI+(Math.PI)*tp;
+    const x1=CX+R*Math.cos(a), y1=CY+R*Math.sin(a);
+    const x2=CX+(R-12)*Math.cos(a), y2=CY+(R-12)*Math.sin(a);
+    ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${col}" stroke-width="3" stroke-linecap="round" opacity="${tp<=pct?'1':'0.1'}"/>`;
+  }
+
+  // Format retard
+  const fmtRetard = v => parseFloat(v)>90 ? '>90 j' : parseFloat(v)===0 ? '0 j' : parseFloat(v).toFixed(0)+' j';
+  const fmtPct    = v => v!=null ? parseFloat(v).toFixed(1)+'%' : '—';
+
+  // KPI — inds.<clé> = { valeur, unite, status } renvoyé par l'API
+  const numOr0 = v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; };
+  const kpis = [
+    {lbl:'Taux paiement',   val: fmtPct(iv('taux_paiement')),        color: numOr0(iv('taux_paiement'))<60?'var(--danger)':numOr0(iv('taux_paiement'))<90?'var(--warn)':'var(--ok)'},
+    {lbl:'Taux de retard',  val: fmtRetard(iv('taux_retard')||0),    color: numOr0(iv('taux_retard'))>90?'var(--danger)':numOr0(iv('taux_retard'))>30?'var(--warn)':'var(--ok)'},
+    {lbl:'Retard externe',  val: fmtRetard(iv('retard_externe')||0),color: numOr0(iv('retard_externe'))>90?'var(--danger)':'var(--navy)'},
+    {lbl:'Score bureau',    val: (iv('score_bureau')??'—')+' /900', color:'var(--navy)'},
+    {lbl:'Pression fin.',   val: (iv('pression_fin')??'—')+'',      color: numOr0(iv('pression_fin'))>40?'var(--warn)':'var(--navy)'},
+    {lbl:'Revenu mensuel',  val: info.revenu_total!=null ? Math.round(info.revenu_total).toLocaleString('fr-FR')+' DT' : '—', color:'var(--navy)'},
+  ];
+
+  const kpiHtml = kpis.map(k=>{
+    const val = String(k.val);
+    return `
+    <div class="kpi-card">
+      <div class="kpi-val" style="color:${k.color}">${val.replace(/[%]/,'').replace(/ DT/,'').replace(/ \/900/,'')}</div>
+      <div class="kpi-unit">${val.replace(/[0-9.,>-]/g,'').trim()||''}</div>
+      <div class="kpi-lbl">${k.lbl}</div>
+    </div>`;
+  }).join('');
+
+  // Bâle
+  const baleHtml = `
+    <div class="bale-row">
+      <div class="bale-item">
+        <div class="bale-val" style="color:var(--danger)">${bale.lgd_pct!=null ? bale.lgd_pct+'%' : '—'}</div>
+        <div class="bale-lbl">LGD (Loss Given Default)</div>
+      </div>
+      <div class="bale-item">
+        <div class="bale-val" style="color:var(--navy)">${bale.ead_value!=null ? Math.round(bale.ead_value).toLocaleString('fr-FR')+' DT' : '—'}</div>
+        <div class="bale-lbl">EAD (Exposition)</div>
+      </div>
+      <div class="bale-item">
+        <div class="bale-val" style="color:var(--sky)">${bale.score_recouvrement!=null ? bale.score_recouvrement+' /1000' : '—'}</div>
+        <div class="bale-lbl">Score recouvrement</div>
+      </div>
+    </div>`;
+
+  // Recommandations
+  const recoHtml = recos.length
+    ? recos.map(r=>`<div class="reco-item"><div class="reco-icon">⚡</div><div>${r}</div></div>`).join('')
+    : '<div class="reco-item"><div class="reco-icon">✓</div><div>Aucune recommandation urgente.</div></div>';
+
+  // PD bar
+  const pdNum = parseFloat(pd)||0;
+  const pdPct = Math.min(100,pdNum);
+  const pdCol = pdNum>70?'var(--danger)':pdNum>40?'var(--warn)':'var(--ok)';
+
+  document.getElementById('right_panel').innerHTML = `
+  <div class="det-topbar">
+    <div class="det-code">${code}</div>
+    <span class="dbadge ${dec}" style="font-size:13px;padding:7px 16px">${dec}</span>
+    <span class="nota-chip" style="background:${nc}1f;color:${nc};font-size:13px;padding:6px 14px">${d.notation||'—'}</span>
+  </div>
+
+  <div class="det-grid">
+
+    <!-- Colonne principale -->
+    <div>
+      <!-- KPIs -->
+      <div class="kpi-section">
+        <div class="sec-title">Indicateurs clés de performance</div>
+        <div class="kpi-grid">${kpiHtml}</div>
+      </div>
+
+      <!-- Bâle -->
+      <div class="bale-section">
+        <div class="sec-title">Métriques Bâle II / III</div>
+        ${baleHtml}
+      </div>
+
+      <!-- Recommandations -->
+      <div class="reco-section">
+        <div class="sec-title">Recommandations opérationnelles</div>
+        ${recoHtml}
+      </div>
+    </div>
+
+    <!-- Colonne scoring -->
+    <div>
+      <div class="scoring-card">
+        <div style="width:100%;font-family:'Syne';font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.6px;">Scoring comportemental</div>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">${ticks}</svg>
+          <div class="gauge-center">
+            <div class="gauge-num" style="color:${col}">${sc}</div>
+            <div class="gauge-denom">/1000</div>
+          </div>
+        </div>
+
+        <div class="score-meta">
+          <div class="sm-item">
+            <div class="sm-val" style="color:${nc}">${d.notation||'—'}</div>
+            <div class="sm-lbl">NOTATION</div>
+          </div>
+          <div class="sm-item">
+            <div class="sm-val" style="color:${pdCol}">${pd} %</div>
+            <div class="sm-lbl">PROB. DÉFAUT</div>
+          </div>
+        </div>
+
+        <div class="pd-bar-wrap">
+          <div class="pd-bar-bg">
+            <div class="pd-bar-fill" style="width:${pdPct}%;background:${pdCol}"></div>
+          </div>
+          <div class="pd-labels"><span>0%</span><span>Seuil ${seuil}%</span><span>100%</span></div>
+        </div>
+
+        <div class="dec-band ${dec}" style="width:100%">
+          <div class="dec-lbl">${dec}</div>
+        </div>
+
+        <div style="font-size:11px;color:var(--g400);text-align:center;line-height:1.5">
+          PD = ${pd}% · Seuil = ${seuil}%<br>
+          ${info.montant_credit!=null ? 'Encours : '+Math.round(info.montant_credit).toLocaleString('fr-FR')+' DT' : ''}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Démarrage
+loadClients();
+</script>
+</body>
+</html>

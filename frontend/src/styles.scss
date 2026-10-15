@@ -1,0 +1,42 @@
+/* Fonts chargées via index.html */
+
+:root {
+  --nc-navy:       #152247;
+  --nc-navy-light: #1e3060;
+  --nc-blue:       #1E6FD9;
+  --nc-blue-light: #3b82f6;
+  --nc-sky:        #89B4E8;
+  --nc-sky-dim:    #e8f1fb;
+  --nc-green:      #10b981;
+  --nc-bg:         #f8faff;
+  --nc-line:       #e8edf6;
+  --nc-g600:       #4b5568;
+  --nc-g500:       #6b7488;
+  --nc-g400:       #9aa1b3;
+  /* Fonts */
+  --font-head: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+html, body {
+  font-family: var(--font-body);
+  background: #fff;
+  color: var(--nc-navy);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+button, input, select, textarea { font-family: inherit; }
+a { color: inherit; }
+h1, h2, h3, h4, h5, h6 { margin: 0; font-family: var(--font-head); font-weight: 700; line-height: 1.2; }
+p { margin: 0; }
+img { max-width: 100%; display: block; }
+ul, ol { list-style: none; padding: 0; margin: 0; }
+
+section[id] { scroll-margin-top: 80px; }

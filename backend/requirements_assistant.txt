@@ -1,0 +1,14 @@
+# Assistant Bancaire IA — NextCredit
+# pip install -r requirements_assistant.txt
+
+flask>=3.0.0
+requests>=2.31.0
+
+# RAG (Retrieval-Augmented Generation)
+langchain>=0.1.0
+langchain-community>=0.0.20
+chromadb>=0.4.22
+sentence-transformers>=2.3.0
+
+# PDF (pour tes futurs documents bancaires)
+pypdf>=4.0.0

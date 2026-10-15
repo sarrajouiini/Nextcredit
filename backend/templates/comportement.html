@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextCredit — Scoring Comportemental</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#152247;--navy-light:#1e3060;
+  --sky:#89B4E8;--sky-light:#c4d9f5;--sky-dim:#e8f1fb;
+  --bg:#f4f6fb;--card:#ffffff;
+  --line:#eaeef6;
+  --g500:#6b7488;--g400:#9aa1b3;
+  --ok:#3ec98b;--ok-soft:#e6f9ef;
+  --warn:#f5a623;--warn-soft:#fef3df;
+  --danger:#ef4b4b;--danger-soft:#fde9e9;
+  --r-card:22px;--r-pill:20px;
+  --t:.18s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--navy);min-height:100vh;}
+
+/* ── Bouton risque (inline, en haut du contenu) ── */
+.risk-fab{display:flex;justify-content:flex-end;width:100%;padding:18px 28px 0;}
+.hdr-risk{display:flex;align-items:center;gap:8px;background:var(--danger-soft);
+  color:var(--danger);font-size:12.5px;font-weight:600;padding:9px 18px;
+  border-radius:var(--r-pill);cursor:pointer;border:1.5px solid var(--danger);
+  font-family:'DM Sans';transition:background var(--t);
+  box-shadow:0 4px 16px rgba(239,75,75,.15);}
+.hdr-risk:hover{background:#fbd9d9;}
+.hdr-risk .d{width:6px;height:6px;border-radius:50%;background:var(--danger);
+  animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.shell{width:100%;margin:0 auto;padding:28px 28px 60px;
+  display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start;}
+
+.card{background:var(--card);border-radius:var(--r-card);border:1px solid var(--line);
+  padding:24px;}
+
+.left{display:flex;flex-direction:column;gap:18px;position:sticky;top:100px;}
+.search-lbl{font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:12px;}
+.search-input{width:100%;height:48px;border:1.5px solid var(--line);border-radius:14px;
+  padding:0 16px;font-family:'DM Sans';font-weight:500;font-size:14.5px;color:var(--navy);
+  background:var(--bg);margin-bottom:10px;outline:none;transition:border-color var(--t);
+  letter-spacing:.2px;}
+.search-input:focus{border-color:var(--sky);background:#fff;}
+.search-input::placeholder{color:var(--g400);font-weight:400;}
+.search-go{width:100%;height:46px;background:var(--navy);color:#fff;border:none;
+  border-radius:14px;font-family:'Syne';font-weight:700;font-size:13px;cursor:pointer;
+  transition:background var(--t);display:flex;align-items:center;justify-content:center;gap:8px;}
+.search-go:hover{background:var(--navy-light);}
+.search-go:disabled{opacity:.55;cursor:not-allowed;}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;
+  border-radius:50%;animation:rot .6s linear infinite;display:none;}
+@keyframes rot{to{transform:rotate(360deg)}}
+.err-box{background:var(--danger-soft);color:var(--danger);border-radius:12px;
+  padding:11px 14px;font-size:12.5px;margin-top:10px;display:none;}
+
+.stat-row{display:flex;gap:10px;}
+.stat-chip{flex:1;display:flex;align-items:center;gap:9px;padding:12px 14px;
+  border:1px solid var(--line);border-radius:16px;background:var(--card);}
+.stat-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-family:'Syne';font-weight:800;font-size:12px;color:#fff;
+  flex-shrink:0;}
+.stat-lbl{font-size:11.5px;color:var(--g500);font-weight:500;line-height:1.3;}
+
+.hist-list{display:flex;flex-direction:column;gap:2px;max-height:280px;overflow-y:auto;}
+.hist-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;
+  cursor:pointer;transition:background var(--t);border:none;background:none;width:100%;
+  text-align:left;font-family:'DM Sans';}
+.hist-item:hover{background:var(--bg);}
+.hist-code{font-weight:600;font-size:13px;color:var(--navy);flex:1;}
+.hist-time{font-size:11px;color:var(--g400);}
+.hist-empty{text-align:center;padding:24px 0;font-size:12.5px;color:var(--g400);}
+.pill-tiny{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;flex-shrink:0;}
+.pill-tiny.CONTENTIEUX{background:var(--danger-soft);color:var(--danger);}
+.pill-tiny.ALERTE{background:var(--warn-soft);color:var(--warn);}
+.pill-tiny.SURVEILLER{background:var(--sky-dim);color:var(--navy);}
+.pill-tiny.MAINTENIR{background:var(--ok-soft);color:var(--ok);}
+
+.right{display:flex;flex-direction:column;gap:18px;}
+
+.empty-state{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:90px 40px;gap:14px;text-align:center;min-height:360px;}
+.empty-state svg{opacity:.25;}
+.empty-title{font-family:'Syne';font-weight:700;font-size:15px;color:var(--navy);opacity:.4;}
+.empty-sub{font-size:13px;color:var(--g400);max-width:260px;line-height:1.6;}
+
+.gauge-card{background:#ffffff;
+  border-radius:var(--r-card);border:1px solid var(--line);padding:32px 36px;
+  display:flex;flex-direction:column;align-items:center;display:none;}
+.gauge-top{width:100%;display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:8px;}
+.gauge-greet{font-family:'Syne';font-weight:800;font-size:20px;color:var(--navy);}
+.gauge-sub{font-size:13.5px;color:var(--g500);margin-top:2px;}
+
+.gauge-wrap{position:relative;width:340px;height:200px;margin:18px 0 6px;}
+.gauge-wrap svg{position:absolute;top:0;left:0;width:340px;height:340px;}
+.gauge-center{position:absolute;bottom:18px;left:0;right:0;display:flex;
+  flex-direction:column;align-items:center;}
+.gauge-delta{font-family:'Syne';font-weight:700;font-size:12px;padding:4px 12px;
+  border-radius:14px;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+.gauge-delta.ok{background:var(--ok-soft);color:var(--ok);}
+.gauge-delta.bad{background:var(--danger-soft);color:var(--danger);}
+.gauge-num{font-family:'Syne';font-weight:600;font-size:50px;color:var(--navy);
+  letter-spacing:-.5px;line-height:1;}
+.gauge-side-lbl{position:absolute;font-size:12px;color:var(--g400);font-weight:500;}
+
+.gauge-foot{width:100%;display:flex;align-items:center;justify-content:center;gap:18px;
+  margin-top:22px;padding-top:20px;border-top:1px solid var(--line);}
+.foot-item{text-align:center;}
+.btn-export{margin-top:18px;padding:10px 22px;background:var(--navy);color:#fff;border:none;
+  border-radius:14px;font-family:'DM Sans';font-weight:600;font-size:13px;cursor:pointer;
+  display:inline-flex;align-items:center;gap:9px;transition:background var(--t);}
+.btn-export:hover{background:var(--navy-light);}
+.btn-export svg{display:block;}
+.foot-val{font-family:'Syne';font-weight:700;font-size:17px;letter-spacing:.2px;}
+.foot-lbl{font-size:11px;color:var(--g400);margin-top:2px;}
+
+.pay-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:24px;display:none;}
+.pay-hd{margin-bottom:16px;}
+.pay-title{font-family:'Syne';font-weight:700;font-size:14px;color:var(--navy);}
+.pay-sub{font-size:12.5px;color:var(--g500);margin-top:3px;}
+.pay-scroll{overflow-x:auto;padding-bottom:4px;}
+.pay-grid{display:grid;grid-template-columns:50px repeat(12,28px);gap:7px;align-items:center;
+  min-width:430px;}
+.pay-month-lbl{font-size:10.5px;color:var(--g400);text-align:center;font-weight:600;}
+.pay-year-lbl{font-size:12px;color:var(--g500);font-weight:700;}
+.pay-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;}
+.pay-dot.ok{background:var(--ok-soft);}
+.pay-dot.late{background:var(--danger-soft);}
+.pay-dot.none{background:transparent;}
+.pay-dot svg{width:13px;height:13px;display:block;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;display:none;}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.kpi-icon{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;}
+.kpi-icon svg{width:18px;height:18px;display:block;}
+.kpi-badge{font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:12px;white-space:nowrap;}
+.kpi-badge.ok{background:var(--ok-soft);color:var(--ok);}
+.kpi-badge.warn{background:var(--warn-soft);color:var(--warn);}
+.kpi-badge.bad{background:var(--danger-soft);color:var(--danger);}
+.kpi-val{font-family:'Syne';font-weight:600;font-size:24px;color:var(--navy);margin-bottom:4px;
+  letter-spacing:-.2px;}
+.kpi-unit{font-family:'DM Sans';font-weight:500;font-size:12.5px;color:var(--g400);
+  margin-left:5px;letter-spacing:.2px;}
+.kpi-name{font-size:12.5px;color:var(--g500);}
+
+.xai-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:24px;display:none;}
+.xai-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.xai-title{font-family:'Syne';font-weight:700;font-size:14px;}
+.xai-tabs{display:flex;gap:6px;background:var(--bg);border-radius:14px;padding:3px;}
+.xtab2{padding:7px 16px;border-radius:11px;border:none;background:transparent;
+  font-size:12px;font-weight:600;color:var(--g500);cursor:pointer;font-family:'DM Sans';}
+.xtab2.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(21,34,71,.1);}
+.xai-note{font-size:12.5px;color:var(--g500);line-height:1.6;margin-bottom:14px;}
+
+.btn-ia{display:inline-flex;align-items:center;gap:7px;padding:7px 15px;
+  background:var(--sky-dim);color:var(--navy);border:1px solid var(--sky-light);
+  border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans';
+  transition:all var(--t);}
+.btn-ia:hover{background:var(--sky-light);}
+.btn-ia:disabled{opacity:.6;cursor:not-allowed;}
+.btn-ia svg{display:block;}
+
+.reco-item{display:flex;align-items:flex-start;gap:11px;padding:11px 0;
+  border-bottom:1px solid var(--line);}
+.reco-item:last-child{border-bottom:none;}
+.reco-prio{flex-shrink:0;font-size:9.5px;font-weight:700;padding:3px 9px;border-radius:9px;
+  text-transform:uppercase;letter-spacing:.4px;margin-top:1px;white-space:nowrap;}
+.reco-prio.HAUTE{background:var(--danger-soft);color:var(--danger);}
+.reco-prio.MOYENNE{background:var(--warn-soft);color:var(--warn);}
+.reco-prio.BASSE{background:var(--ok-soft);color:var(--ok);}
+.reco-prio.IA{background:var(--sky-dim);color:var(--navy);}
+.reco-text{font-size:13px;color:var(--navy);line-height:1.5;}
+
+.reco-ia-sep{height:1px;background:var(--line);margin:16px 0;}
+.reco-ia-label{font-size:11px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:10px;}
+.reco-ia-text{font-size:13px;color:var(--navy);line-height:1.7;white-space:pre-line;}
+.reco-empty{font-size:12.5px;color:var(--g400);padding:8px 0;}
+.xai-panel{display:none;}
+.xai-panel.on{display:block;}
+.frow{display:flex;align-items:center;gap:12px;padding:9px 0;}
+.frow-lbl{font-size:12.5px;color:var(--navy);width:160px;font-weight:500;flex-shrink:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.frow-track{flex:1;height:7px;background:var(--bg);border-radius:4px;overflow:hidden;}
+.frow-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.frow-fill.risk{background:linear-gradient(90deg,var(--warn),var(--danger));}
+.frow-fill.prot{background:linear-gradient(90deg,var(--sky),var(--ok));}
+.frow-tag{font-size:11px;font-weight:600;width:90px;text-align:right;flex-shrink:0;}
+.frow-tag.risk{color:var(--danger);}
+.frow-tag.prot{color:var(--ok);}
+
+/* ══ Page pleine — liste clients à risque ══════════════════════ */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:500;
+  display:none;flex-direction:column;overflow:hidden;}
+.overlay.on{display:flex;}
+
+/* barre du haut */
+.rp-topbar{height:60px;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;padding:0 24px;gap:14px;flex-shrink:0;}
+.rp-back{width:34px;height:34px;border:none;background:var(--bg);border-radius:50%;
+  cursor:pointer;color:var(--g500);display:flex;align-items:center;justify-content:center;
+  transition:background var(--t);flex-shrink:0;}
+.rp-back:hover{background:var(--line);}
+.rp-back svg{display:block;}
+.rp-title{font-family:'Syne';font-weight:700;font-size:15px;color:var(--navy);}
+.rp-sub{font-size:12px;color:var(--g400);margin-top:1px;}
+
+/* filtres */
+.rp-bar{padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;}
+.fpill{padding:5px 14px;border-radius:14px;border:1.5px solid var(--line);font-size:11.5px;
+  font-weight:700;cursor:pointer;color:var(--g500);background:#fff;transition:all var(--t);
+  font-family:'DM Sans';}
+.fpill.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+.fpill.A.on{background:var(--warn-soft);color:var(--warn);border-color:var(--warn);}
+.fpill.C.on{background:var(--danger-soft);color:var(--danger);border-color:var(--danger);}
+.fpill.S.on{background:var(--sky-dim);color:var(--navy);border-color:var(--sky);}
+.fpill.M.on{background:var(--ok-soft);color:var(--ok);border-color:var(--ok);}
+.modal-count{font-size:12px;color:var(--g400);margin-left:auto;}
+.btn-csv{padding:7px 16px;background:var(--navy);color:#fff;border:none;border-radius:12px;
+  font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans';transition:background var(--t);
+  display:inline-flex;align-items:center;gap:6px;}
+.btn-csv:hover{background:var(--navy-light);}
+
+/* corps split */
+.rp-body{display:flex;flex:1;overflow:hidden;}
+
+/* panneau gauche — liste */
+.rp-list{width:520px;flex-shrink:0;border-right:1px solid var(--line);
+  display:flex;flex-direction:column;overflow:hidden;}
+.rp-list-scroll{overflow-y:auto;flex:1;}
+.modal-loading{display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:64px;color:var(--g400);font-size:13px;}
+.mloader{width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--sky);
+  border-radius:50%;animation:rot .6s linear infinite;}
+
+/* panneau droit — détail */
+.rp-detail{flex:1;overflow-y:auto;background:var(--bg);}
+.rp-detail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:14px;color:var(--g400);}
+.rp-detail-empty svg{opacity:.25;}
+.rp-detail-empty p{font-size:13px;}
+
+/* pied de page */
+.modal-ft{padding:12px 24px;border-top:1px solid var(--line);background:#fff;
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-ft-info{font-size:12px;color:var(--g400);}
+
+/* table */
+.rtable{width:100%;border-collapse:collapse;}
+.rtable thead tr{background:var(--bg);}
+.rtable th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--g400);
+  text-transform:uppercase;letter-spacing:.6px;white-space:nowrap;}
+.rtable td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.rtable tbody tr{cursor:pointer;transition:background var(--t);}
+.rtable tbody tr:hover{background:var(--sky-dim);}
+.rtable tbody tr.selected{background:#deeafb;}
+.rtable tbody tr:last-child td{border-bottom:none;}
+.sc-chip{display:inline-flex;align-items:center;justify-content:center;width:44px;height:22px;
+  border-radius:8px;font-family:'Syne';font-size:11px;font-weight:800;}
+.nota-chip{display:inline-flex;padding:3px 8px;border-radius:8px;font-size:11px;font-weight:800;
+  font-family:'Syne';}
+.dbadge{display:inline-flex;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;
+  letter-spacing:.4px;text-transform:uppercase;}
+.dbadge.ALERTE{background:var(--warn-soft);color:var(--warn);}
+.dbadge.CONTENTIEUX{background:var(--danger-soft);color:var(--danger);}
+.dbadge.SURVEILLER{background:var(--sky-dim);color:var(--navy);}
+.dbadge.MAINTENIR{background:var(--ok-soft);color:var(--ok);}
+.rbar-wrap{display:flex;align-items:center;gap:6px;}
+.rbar{height:4px;border-radius:3px;background:linear-gradient(90deg,var(--warn),var(--danger));}
+.ccode{font-family:'Syne';font-size:12px;font-weight:700;color:var(--navy);}
+
+/* ── Détail dans le panneau droit ── */
+.dp-wrap{padding:22px;display:flex;flex-direction:column;gap:16px;}
+.dp-topbar{display:flex;align-items:center;gap:12px;}
+.dp-code{font-family:'Syne';font-weight:800;font-size:16px;color:var(--navy);}
+.dp-loading{display:flex;align-items:center;gap:10px;padding:48px 24px;
+  color:var(--g400);font-size:13px;}
+.dp-gauge-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:22px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.dp-gauge-wrap{position:relative;width:240px;height:140px;}
+.dp-gauge-wrap svg{width:240px;}
+.dp-gauge-center{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;}
+.dp-score{font-family:'Syne';font-weight:800;font-size:38px;line-height:1;}
+.dp-denom{font-size:11px;color:var(--g400);}
+.dp-foot{display:flex;gap:20px;margin-top:4px;}
+.dp-fi{text-align:center;}
+.dp-fv{font-family:'Syne';font-weight:700;font-size:14px;}
+.dp-fl{font-size:10px;color:var(--g400);text-transform:uppercase;letter-spacing:.4px;}
+.dp-dec-band{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:14px;
+  font-size:13px;font-weight:700;font-family:'Syne';width:100%;}
+.dp-dec-band.APPROUVE,.dp-dec-band.MAINTENIR{background:var(--ok-soft);color:var(--ok);}
+.dp-dec-band.REFUSE,.dp-dec-band.CONTENTIEUX{background:var(--danger-soft);color:var(--danger);}
+.dp-dec-band.SURVEILLER{background:var(--sky-dim);color:var(--navy);}
+.dp-dec-band.ALERTE{background:var(--warn-soft);color:var(--warn);}
+.dp-section-title{font-size:10px;font-weight:700;color:var(--g400);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:10px;}
+.dp-kpi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.dp-kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+.dp-kpi-val{font-family:'Syne';font-weight:700;font-size:16px;margin-bottom:2px;}
+.dp-kpi-lbl{font-size:10.5px;color:var(--g400);}
+.dp-xai{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;}
+.dp-pay{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;}
+.dp-pay-scroll{overflow-x:auto;}
+.dp-reco{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;}
+.dp-reco-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;
+  border-bottom:1px solid var(--line);font-size:12.5px;color:var(--navy);}
+.dp-reco-item:last-child{border-bottom:none;}
+.dp-reco-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+
+@media(max-width:980px){
+  .shell{grid-template-columns:1fr;}
+  .left{position:static;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .gauge-wrap,.gauge-wrap svg{width:280px;}
+  .gauge-wrap{height:165px;}
+  .gauge-num{font-size:40px;}
+}
+</style>
+</head>
+<body>
+
+<div class="risk-fab">
+  <button class="hdr-risk" onclick="openModal()">
+    <div class="d"></div>
+    Clients à risque élevé
+  </button>
+</div>
+
+<div class="overlay" id="overlay">
+
+  <!-- barre supérieure -->
+  <div class="rp-topbar">
+    <button class="rp-back" onclick="closeModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+    </button>
+    <div>
+      <div class="rp-title">Portefeuille à risque élevé</div>
+      <div class="rp-sub">Cliquez sur un client pour afficher son scoring comportemental complet</div>
+    </div>
+  </div>
+
+  <!-- filtres -->
+  <div class="rp-bar">
+    <button class="fpill on" id="fp_all" onclick="filt('all',this)">Tous</button>
+    <button class="fpill C"  id="fp_c"   onclick="filt('CONTENTIEUX',this)">Contentieux</button>
+    <button class="fpill A"  id="fp_a"   onclick="filt('ALERTE',this)">Alerte</button>
+    <button class="fpill S"  id="fp_s"   onclick="filt('SURVEILLER',this)">Surveiller</button>
+    <button class="fpill M"  id="fp_m"   onclick="filt('MAINTENIR',this)">Maintenir</button>
+    <span class="modal-count" id="mcnt">—</span>
+    <button class="btn-csv" onclick="exportCSV()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exporter CSV
+    </button>
+  </div>
+
+  <!-- corps : liste gauche + détail droite -->
+  <div class="rp-body">
+
+    <!-- liste -->
+    <div class="rp-list">
+      <div class="rp-list-scroll" id="mbody">
+        <div class="modal-loading"><div class="mloader"></div>Chargement du portefeuille…</div>
+      </div>
+      <div class="modal-ft">
+        <span class="modal-ft-info" id="mft">—</span>
+      </div>
+    </div>
+
+    <!-- détail -->
+    <div class="rp-detail" id="rp_detail">
+      <div class="rp-detail-empty" id="rp_detail_empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <p>Sélectionnez un client dans la liste<br>pour afficher son scoring complet</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="shell">
+
+  <aside class="left">
+
+    <div class="card">
+      <div class="search-lbl">Code client</div>
+      <input type="text" id="cc" class="search-input" placeholder="CLIE157753"
+             autocomplete="off" onkeydown="if(event.key==='Enter')go()">
+      <button class="search-go" id="btn_go" onclick="go()">
+        <div class="spin" id="spin"></div>
+        <span id="btn_lbl">Analyser</span>
+      </button>
+      <div class="err-box" id="err"></div>
+    </div>
+
+    <div class="card">
+      <div class="search-lbl">Récemment analysés</div>
+      <div class="hist-list" id="hist"></div>
+    </div>
+
+  </aside>
+
+  <main class="right">
+
+    <div class="empty-state" id="empty">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#152247" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      <div class="empty-title">Aucune analyse</div>
+      <div class="empty-sub">Entrez un code client pour obtenir le score comportemental et les indicateurs de risque.</div>
+    </div>
+
+    <div class="gauge-card" id="gauge_card">
+      <div class="gauge-top">
+        <div>
+          <div class="gauge-greet">Client <span id="g_code">—</span></div>
+          <div class="gauge-sub">Voici son score comportemental</div>
+        </div>
+      </div>
+
+      <div class="gauge-wrap">
+        <svg viewBox="0 0 340 340" id="gauge_svg">
+            <line class="gtick" data-pct="0.0000" x1="54.0" y1="195.0" x2="30.0" y2="195.0" stroke="rgb(239,75,75)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.0169" x1="54.2" y1="188.8" x2="30.2" y2="187.5" stroke="rgb(239,81,72)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.0339" x1="54.7" y1="182.7" x2="30.8" y2="180.1" stroke="rgb(240,87,70)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.0508" x1="55.5" y1="176.5" x2="31.8" y2="172.7" stroke="rgb(240,94,67)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.0678" x1="56.6" y1="170.5" x2="33.2" y2="165.4" stroke="rgb(241,100,64)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.0847" x1="58.1" y1="164.5" x2="34.9" y2="158.2" stroke="rgb(241,106,61)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1017" x1="59.9" y1="158.6" x2="37.1" y2="151.0" stroke="rgb(241,112,59)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1186" x1="62.0" y1="152.8" x2="39.6" y2="144.0" stroke="rgb(242,118,56)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1356" x1="64.4" y1="147.1" x2="42.5" y2="137.2" stroke="rgb(242,124,53)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1525" x1="67.1" y1="141.5" x2="45.8" y2="130.4" stroke="rgb(243,131,51)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1695" x1="70.1" y1="136.1" x2="49.4" y2="123.9" stroke="rgb(243,137,48)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.1864" x1="73.3" y1="130.9" x2="53.3" y2="117.6" stroke="rgb(243,143,45)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2034" x1="76.9" y1="125.8" x2="57.6" y2="111.5" stroke="rgb(244,149,42)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2203" x1="80.7" y1="121.0" x2="62.2" y2="105.6" stroke="rgb(244,155,40)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2373" x1="84.8" y1="116.3" x2="67.1" y2="100.0" stroke="rgb(245,161,37)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2542" x1="89.1" y1="111.9" x2="72.3" y2="94.7" stroke="rgb(245,167,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2712" x1="93.6" y1="107.7" x2="77.8" y2="89.6" stroke="rgb(245,170,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.2881" x1="98.4" y1="103.8" x2="83.5" y2="84.9" stroke="rgb(245,173,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3051" x1="103.3" y1="100.1" x2="89.5" y2="80.4" stroke="rgb(245,177,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3220" x1="108.5" y1="96.7" x2="95.7" y2="76.3" stroke="rgb(245,180,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3390" x1="113.8" y1="93.5" x2="102.2" y2="72.5" stroke="rgb(245,183,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3559" x1="119.3" y1="90.7" x2="108.8" y2="69.1" stroke="rgb(245,186,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3729" x1="124.9" y1="88.1" x2="115.6" y2="66.0" stroke="rgb(245,190,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.3898" x1="130.6" y1="85.9" x2="122.5" y2="63.3" stroke="rgb(245,193,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4068" x1="136.5" y1="83.9" x2="129.6" y2="61.0" stroke="rgb(245,196,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4237" x1="142.5" y1="82.3" x2="136.8" y2="59.0" stroke="rgb(245,199,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4407" x1="148.5" y1="81.0" x2="144.1" y2="57.4" stroke="rgb(245,203,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4576" x1="154.6" y1="80.0" x2="151.4" y2="56.2" stroke="rgb(245,206,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4746" x1="160.7" y1="79.4" x2="158.8" y2="55.4" stroke="rgb(245,209,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.4915" x1="166.9" y1="79.0" x2="166.3" y2="55.0" stroke="rgb(245,212,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5085" x1="173.1" y1="79.0" x2="173.7" y2="55.0" stroke="rgb(242,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5254" x1="179.3" y1="79.4" x2="181.2" y2="55.4" stroke="rgb(236,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5424" x1="185.4" y1="80.0" x2="188.6" y2="56.2" stroke="rgb(230,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5593" x1="191.5" y1="81.0" x2="195.9" y2="57.4" stroke="rgb(225,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5763" x1="197.5" y1="82.3" x2="203.2" y2="59.0" stroke="rgb(219,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.5932" x1="203.5" y1="83.9" x2="210.4" y2="61.0" stroke="rgb(213,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6102" x1="209.4" y1="85.9" x2="217.5" y2="63.3" stroke="rgb(207,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6271" x1="215.1" y1="88.1" x2="224.4" y2="66.0" stroke="rgb(201,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6441" x1="220.7" y1="90.7" x2="231.2" y2="69.1" stroke="rgb(195,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6610" x1="226.2" y1="93.5" x2="237.8" y2="72.5" stroke="rgb(190,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6780" x1="231.5" y1="96.7" x2="244.3" y2="76.3" stroke="rgb(184,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.6949" x1="236.7" y1="100.1" x2="250.5" y2="80.4" stroke="rgb(178,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7119" x1="241.6" y1="103.8" x2="256.5" y2="84.9" stroke="rgb(172,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7288" x1="246.4" y1="107.7" x2="262.2" y2="89.6" stroke="rgb(166,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7458" x1="250.9" y1="111.9" x2="267.7" y2="94.7" stroke="rgb(160,214,35)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7627" x1="255.2" y1="116.3" x2="272.9" y2="100.0" stroke="rgb(154,213,40)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7797" x1="259.3" y1="121.0" x2="277.8" y2="105.6" stroke="rgb(147,212,47)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.7966" x1="263.1" y1="125.8" x2="282.4" y2="111.5" stroke="rgb(141,212,54)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8136" x1="266.7" y1="130.9" x2="286.7" y2="117.6" stroke="rgb(134,211,61)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8305" x1="269.9" y1="136.1" x2="290.6" y2="123.9" stroke="rgb(128,210,68)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8475" x1="272.9" y1="141.5" x2="294.2" y2="130.4" stroke="rgb(121,209,76)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8644" x1="275.6" y1="147.1" x2="297.5" y2="137.2" stroke="rgb(115,208,83)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8814" x1="278.0" y1="152.8" x2="300.4" y2="144.0" stroke="rgb(108,207,90)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.8983" x1="280.1" y1="158.6" x2="302.9" y2="151.0" stroke="rgb(101,206,97)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.9153" x1="281.9" y1="164.5" x2="305.1" y2="158.2" stroke="rgb(95,205,104)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.9322" x1="283.4" y1="170.5" x2="306.8" y2="165.4" stroke="rgb(88,205,111)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.9492" x1="284.5" y1="176.5" x2="308.2" y2="172.7" stroke="rgb(82,204,118)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.9661" x1="285.3" y1="182.7" x2="309.2" y2="180.1" stroke="rgb(75,203,125)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="0.9831" x1="285.8" y1="188.8" x2="309.8" y2="187.5" stroke="rgb(69,202,132)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+            <line class="gtick" data-pct="1.0000" x1="286.0" y1="195.0" x2="310.0" y2="195.0" stroke="rgb(62,201,139)" stroke-width="3.4" stroke-linecap="round" opacity="0.16"/>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-delta" id="g_delta" style="display:none"></div>
+          <div class="gauge-num" id="g_score">000</div>
+        </div>
+        <span class="gauge-side-lbl" style="left:0;bottom:30px">0</span>
+        <span class="gauge-side-lbl" style="left:38px;top:96px">250</span>
+        <span class="gauge-side-lbl" style="left:152px;top:8px">500</span>
+        <span class="gauge-side-lbl" style="right:46px;top:96px">750</span>
+        <span class="gauge-side-lbl" style="right:0;bottom:30px">1000</span>
+      </div>
+
+      <div class="gauge-foot">
+        <div class="foot-item">
+          <div class="foot-val" id="g_nota">—</div>
+          <div class="foot-lbl">Notation</div>
+        </div>
+        <div class="foot-item">
+          <div class="foot-val" id="g_dec">—</div>
+          <div class="foot-lbl">Décision</div>
+        </div>
+        <div class="foot-item">
+          <div class="foot-val" id="g_pd">—</div>
+          <div class="foot-lbl">Prob. défaut</div>
+        </div>
+      </div>
+
+      <button class="btn-export" id="btn_export" onclick="exportFiche()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exporter la fiche
+      </button>
+    </div>
+
+    <div class="pay-card" id="pay_card">
+      <div class="pay-hd">
+        <div class="pay-title">Historique de paiement</div>
+        <div class="pay-sub" id="pay_sub">Chargement…</div>
+      </div>
+      <div class="pay-scroll">
+        <div class="pay-grid" id="pay_grid"></div>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="kpi_grid"></div>
+
+    <div class="xai-card" id="xai_card">
+      <div class="xai-hd">
+        <span class="xai-title">Facteurs explicatifs</span>
+        <div class="xai-tabs">
+          <button class="xtab2 on" onclick="switchXAI('shap',this)">SHAP</button>
+          <button class="xtab2"    onclick="switchXAI('lime',this)">LIME</button>
+        </div>
+      </div>
+      <div class="xai-panel on" id="p_shap">
+        <div class="xai-note" id="xs_sub">Calcul en cours…</div>
+        <div id="xs_bars"></div>
+      </div>
+      <div class="xai-panel" id="p_lime">
+        <div class="xai-note" id="xl_sub">Cliquez sur LIME pour charger.</div>
+        <div id="xl_bars"></div>
+      </div>
+    </div>
+
+    <div class="xai-card" id="reco_card" style="display:none">
+      <div class="xai-hd">
+        <span class="xai-title">Recommandations</span>
+        <button class="btn-ia" id="btn_ia" onclick="loadRecoIA()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L15 9 L22 9 L16.5 13.5 L18.5 21 L12 16.5 L5.5 21 L7.5 13.5 L2 9 L9 9 Z"/></svg>
+          Approfondir avec l'IA
+        </button>
+      </div>
+      <div id="reco_list"></div>
+      <div id="reco_ia_box" style="display:none">
+        <div class="reco-ia-sep"></div>
+        <div class="reco-ia-label">Analyse approfondie (IA)</div>
+        <div class="reco-ia-text" id="reco_ia_text"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:5000/api/comportement';
+
+function getToken(){
+  return new URLSearchParams(window.location.search).get('token')
+      || localStorage.getItem('nc_access_token')
+      || localStorage.getItem('nc_jwt')
+      || localStorage.getItem('access_token')
+      || localStorage.getItem('token')
+      || '';
+}
+function authHeaders(extra){
+  const t = getToken();
+  return Object.assign({'Content-Type':'application/json'}, t ? {'Authorization':'Bearer '+t} : {}, extra||{});
+}
+
+/* ── Gestion expiration de session ──────────────────────────────────── */
+function showSessionExpired(){
+  if(document.getElementById('_session_overlay')) return;
+  const ov = document.createElement('div');
+  ov.id = '_session_overlay';
+  ov.style.cssText = `position:fixed;inset:0;background:rgba(21,34,71,.85);z-index:9999;
+    display:flex;align-items:center;justify-content:center;`;
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:40px;margin-bottom:16px;">⏱️</div>
+      <h2 style="font-family:'Syne',sans-serif;color:#152247;margin-bottom:8px;font-size:20px;">Session expirée</h2>
+      <p style="color:#6b7a96;font-size:13px;margin-bottom:24px;line-height:1.6;">
+        Votre token d'authentification a expiré.<br>Veuillez vous reconnecter pour continuer.
+      </p>
+      <button onclick="location.reload()" style="background:#152247;color:#fff;border:none;border-radius:12px;
+        padding:12px 32px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;width:100%;">
+        🔄 Recharger la page
+      </button>
+      <button onclick="localStorage.removeItem('nc_jwt');localStorage.removeItem('nc_jwt_refresh');location.reload()"
+        style="background:none;border:none;color:#6b7a96;font-size:12px;margin-top:12px;cursor:pointer;text-decoration:underline;">
+        Se déconnecter complètement
+      </button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+async function tryRefreshToken(){
+  const refresh = localStorage.getItem('nc_jwt_refresh');
+  if(!refresh) return false;
+  try{
+    const r = await fetch('http://127.0.0.1:5000/api/auth/refresh', {
+      method:'POST',
+      headers:{'Authorization':'Bearer '+refresh,'Content-Type':'application/json'}
+    });
+    const j = await r.json();
+    if(j.success && j.data && j.data.access_token){
+      localStorage.setItem('nc_jwt', j.data.access_token);
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+async function fetchWithAuth(url, options={}){
+  options.headers = options.headers || authHeaders();
+  let resp = await fetch(url, options);
+  if(resp.status === 401){
+    const refreshed = await tryRefreshToken();
+    if(refreshed){
+      options.headers = authHeaders();  // headers mis à jour avec le nouveau token
+      resp = await fetch(url, options);
+      if(resp.status !== 401) return resp;
+    }
+    showSessionExpired();
+    throw new Error('Session expirée');
+  }
+  return resp;
+}
+
+const KPI_CFG = {
+  pression_fin:   {lbl:'Pression financière',     icon:'card'},
+  retard_externe: {lbl:'Retard crédit externe',   icon:'bank'},
+  score_bureau:   {lbl:'Score bureau moyen',      icon:'gauge'},
+  taux_paiement:  {lbl:'Taux de paiement',        icon:'check'},
+  taux_retard:    {lbl:'Taux de retard',          icon:'clock'},
+  recouvrement:   {lbl:'Score de recouvrement',   icon:'wallet'},
+};
+const ICONS = {
+  card:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  bank:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 21 8 3 8"/></svg>',
+  gauge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14 16 10"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="9" y1="3" x2="15" y2="3"/></svg>',
+  wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>',
+};
+
+function scoreColor(s){
+  if(s>=700) return '#3ec98b';
+  if(s>=500) return '#f5a623';
+  return '#ef4b4b';
+}
+
+function setGauge(score){
+  const pct = Math.max(0, Math.min(1, score/1000));
+  document.querySelectorAll('.gtick').forEach(tick=>{
+    const tpct = parseFloat(tick.getAttribute('data-pct'));
+    tick.style.transition = 'opacity .5s ease';
+    tick.style.opacity = tpct <= pct ? '1' : '0.14';
+  });
+}
+
+function countUp(id, target){
+  const el = document.getElementById(id);
+  let cur = 0;
+  const step = Math.max(1, Math.ceil(target/45));
+  const iv = setInterval(()=>{
+    cur = Math.min(cur+step, target);
+    el.textContent = String(cur).padStart(3,'0');
+    if(cur>=target) clearInterval(iv);
+  }, 16);
+}
+
+function render(data, code){
+  const {score, notation, label, decision, pd_value:pd, threshold:thr,
+         indicateurs:inds={}, recouvrement={}, recommandations=[]} = data;
+  const color = scoreColor(score);
+
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('gauge_card').style.display = 'flex';
+  document.getElementById('kpi_grid').style.display = 'grid';
+  document.getElementById('xai_card').style.display = 'block';
+  document.getElementById('reco_card').style.display = 'block';
+  document.getElementById('reco_ia_box').style.display = 'none';
+  document.getElementById('reco_ia_text').innerHTML = '';
+
+  document.getElementById('g_code').textContent = code;
+  setTimeout(()=>setGauge(score), 80);
+  countUp('g_score', score);
+
+  document.getElementById('g_nota').textContent = notation;
+  document.getElementById('g_nota').style.color = color;
+
+  document.getElementById('g_dec').textContent = decision;
+  document.getElementById('g_dec').style.color = color;
+
+  document.getElementById('g_pd').textContent = (pd*100).toFixed(2) + '%';
+
+  const delta = document.getElementById('g_delta');
+  delta.style.display = 'flex';
+  if(score >= 600){
+    delta.className = 'gauge-delta ok';
+    delta.textContent = '▲ ' + label;
+  } else {
+    delta.className = 'gauge-delta bad';
+    delta.textContent = '▼ ' + label;
+  }
+
+  /* Injecter le score de recouvrement comme KPI supplémentaire */
+  const indsAvecRecouvrement = {...inds};
+  if(recouvrement && recouvrement.score_recouvrement != null){
+    const sr = recouvrement.score_recouvrement;
+    indsAvecRecouvrement.recouvrement = {
+      valeur: sr,
+      unite: '/1000',
+      status: sr>=700 ? 'OK' : sr>=400 ? 'WARN' : 'ATTN',
+    };
+  }
+
+  const grid = document.getElementById('kpi_grid');
+  grid.innerHTML = '';
+  for(const [k,v] of Object.entries(indsAvecRecouvrement)){
+    const cfg = KPI_CFG[k] || {lbl:k, icon:'gauge'};
+    const st  = v.status==='OK'?'ok':v.status==='WARN'?'warn':'bad';
+    const badgeTxt = st==='ok'?'Impact faible':st==='warn'?'Impact moyen':'Impact fort';
+    const bg  = st==='ok'?'var(--ok-soft)':st==='warn'?'var(--warn-soft)':'var(--danger-soft)';
+    const fg  = st==='ok'?'#3ec98b':st==='warn'?'#f5a623':'#ef4b4b';
+    // Plafonnage à "> 90 J" pour les indicateurs de retard en jours
+    let affVal = v.valeur, affUnit = v.unite;
+    if((k==='taux_retard' || k==='retard_externe') && parseFloat(v.valeur) > 90){
+      affVal = '> 90'; affUnit = 'J';
+    }
+    grid.insertAdjacentHTML('beforeend', `
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <div class="kpi-icon" style="background:${bg};color:${fg}">${ICONS[cfg.icon]}</div>
+          <span class="kpi-badge ${st}">${badgeTxt}</span>
+        </div>
+        <div class="kpi-val">${affVal}${affUnit ? `<span class="kpi-unit">${affUnit}</span>` : ''}</div>
+        <div class="kpi-name">${cfg.lbl}</div>
+      </div>`);
+  }
+
+  /* Recommandations métier (règles, instantanées) */
+  const recoList = document.getElementById('reco_list');
+  if(!recommandations.length){
+    recoList.innerHTML = '<div class="reco-empty">Aucune recommandation disponible.</div>';
+  } else {
+    recoList.innerHTML = recommandations.map(r => `
+      <div class="reco-item">
+        <span class="reco-prio ${r.priorite}">${r.priorite}</span>
+        <span class="reco-text">${r.texte}</span>
+      </div>`).join('');
+  }
+
+  saveHist(code, decision, score);
+}
+
+function switchXAI(t, btn){
+  document.querySelectorAll('.xtab2').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.xai-panel').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('p_'+t).classList.add('on');
+  if(t==='lime' && !document.getElementById('xl_bars').innerHTML) loadLIME();
+}
+function renderBars(items, subEl, barsEl, expl){
+  subEl.textContent = expl || '';
+  barsEl.innerHTML = '';
+  const mx = Math.max(...(items||[]).map(f=>Math.abs(f.shap_value||f.weight||0)), .001);
+  (items||[]).forEach(f=>{
+    const val = Math.abs(f.shap_value||f.weight||0);
+    const risk = f.direction === 'risque';
+    const pct = Math.round(val/mx*100);
+    barsEl.insertAdjacentHTML('beforeend', `
+      <div class="frow">
+        <span class="frow-lbl" title="${f.feature}">${f.feature}</span>
+        <div class="frow-track"><div class="frow-fill ${risk?'risk':'prot'}" style="width:${pct}%"></div></div>
+        <span class="frow-tag ${risk?'risk':'prot'}">${risk?'▲ risque':'▼ protection'}</span>
+      </div>`);
+  });
+}
+async function loadSHAP(code){
+  document.getElementById('xs_sub').textContent = 'Calcul SHAP…';
+  document.getElementById('xs_bars').innerHTML = '';
+  try{
+    const r = await fetchWithAuth(`${API}/explain/shap?top_n=6`, {
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({client_code: code})
+    });
+    const j = await r.json();
+    if(j.success) renderBars(j.data.shap_values,
+      document.getElementById('xs_sub'), document.getElementById('xs_bars'), j.data.explication);
+    else document.getElementById('xs_sub').textContent = 'SHAP non disponible.';
+  }catch{ document.getElementById('xs_sub').textContent = 'SHAP non disponible.'; }
+}
+async function loadLIME(){
+  const code = document.getElementById('cc').value.trim();
+  document.getElementById('xl_sub').textContent = 'Calcul LIME…';
+  try{
+    const r = await fetchWithAuth(`${API}/explain/lime?top_n=6`, {
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({client_code: code})
+    });
+    const j = await r.json();
+    if(j.success) renderBars(j.data.lime_values||j.data.shap_values,
+      document.getElementById('xl_sub'), document.getElementById('xl_bars'), j.data.explication);
+    else document.getElementById('xl_sub').textContent = 'LIME non disponible.';
+  }catch{ document.getElementById('xl_sub').textContent = 'LIME non disponible.'; }
+}
+
+async function go(){
+  const code = document.getElementById('cc').value.trim();
+  if(!code){ showErr('Veuillez entrer un code client.'); return; }
+
+  const btn = document.getElementById('btn_go');
+  btn.disabled = true;
+  document.getElementById('spin').style.display = 'block';
+  document.getElementById('btn_lbl').textContent = 'Analyse…';
+  clearErr();
+  document.getElementById('xl_bars').innerHTML = '';
+  document.getElementById('xl_sub').textContent = 'Cliquez sur LIME pour charger.';
+
+  try{
+    const r = await fetchWithAuth(`${API}/predict`, {
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({client_code: code})
+    });
+    const j = await r.json();
+    if(j.success && j.data){
+      render(j.data, code);
+      loadSHAP(code);
+      loadPaymentHistory(code);
+    } else {
+      showErr(j.message || 'Client introuvable.');
+      document.getElementById('empty').style.display = 'flex';
+      document.getElementById('gauge_card').style.display = 'none';
+      document.getElementById('pay_card').style.display = 'none';
+      document.getElementById('kpi_grid').style.display = 'none';
+      document.getElementById('xai_card').style.display = 'none';
+      document.getElementById('reco_card').style.display = 'none';
+    }
+  }catch{
+    showErr('Impossible de contacter le serveur Flask (port 5000).');
+  }finally{
+    btn.disabled = false;
+    document.getElementById('spin').style.display = 'none';
+    document.getElementById('btn_lbl').textContent = 'Analyser';
+  }
+}
+
+function showErr(m){ const e=document.getElementById('err'); e.textContent=m; e.style.display='block'; }
+function clearErr(){ document.getElementById('err').style.display='none'; }
+
+function saveHist(code, dec, score){
+  let h = JSON.parse(localStorage.getItem('nc_h')||'[]');
+  h = h.filter(x=>x.c!==code);
+  h.unshift({c:code, d:dec, s:score, t:Date.now()});
+  localStorage.setItem('nc_h', JSON.stringify(h.slice(0,8)));
+  renderHist();
+}
+function renderHist(){
+  const h = JSON.parse(localStorage.getItem('nc_h')||'[]');
+  const el = document.getElementById('hist');
+  if(!h.length){
+    el.innerHTML = '<div class="hist-empty">Aucune analyse récente</div>';
+    return;
+  }
+  el.innerHTML = h.map(x=>{
+    const t = new Date(x.t).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `<button class="hist-item" onclick="loadHist('${x.c}')">
+      <span class="hist-code">${x.c}</span>
+      <span class="hist-time">${t}</span>
+      <span class="pill-tiny ${x.d}">${x.d}</span>
+    </button>`;
+  }).join('');
+}
+function loadHist(code){
+  document.getElementById('cc').value = code;
+  go();
+}
+
+let riskAll = [], riskFilt = 'all';
+
+async function openModal(){
+  document.getElementById('overlay').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  if(!riskAll.length) loadRisk();  // pas d'await — overlay s'ouvre immédiatement
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('on');
+  document.body.style.overflow = '';
+}
+async function loadRisk(){
+  document.getElementById('mbody').innerHTML =
+    '<div class="modal-loading"><div class="mloader"></div>' +
+    'Analyse du portefeuille en cours… (peut prendre 15-30 s)</div>';
+  try{
+    const t = getToken();
+    const r = await fetchWithAuth(`${API}/liste-a-risque?limit=50&top_n=50`, {
+      headers: t ? {'Authorization':'Bearer '+t} : {}
+    });
+    const j = await r.json();
+    if(!j.success){
+      document.getElementById('mbody').innerHTML =
+        `<div class="modal-loading" style="color:var(--danger)">${j.message||'Erreur API.'}</div>`;
+      return;
+    }
+    riskAll = j.data.clients||j.data||[];
+    drawTable(riskAll);
+  }catch(e){
+    document.getElementById('mbody').innerHTML =
+      '<div class="modal-loading" style="color:var(--danger)">Impossible de contacter le serveur.</div>';
+  }
+}
+function filt(type, btn){
+  riskFilt = type;
+  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  const rows = type==='all' ? riskAll : riskAll.filter(r=>r.decision===type);
+  drawTable(rows);
+  // réinitialiser le panneau droite lors d'un changement de filtre
+  document.getElementById('rp_detail').innerHTML = `
+    <div class="rp-detail-empty" id="rp_detail_empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>Sélectionnez un client dans la liste<br>pour afficher son scoring complet</p>
+    </div>`;
+}
+function drawTable(rows){
+  const mx = Math.max(...rows.map(r=>r.avg_retard||0), 1);
+  const NOTA = {AAA:'#3ec98b',AA:'#5ed79b',A:'#8fe0b6',BBB:'#89B4E8',BB:'#f5a623',B:'#f0832a',CCC:'#ef4b4b'};
+  const tbody = rows.map((r,i)=>{
+    const c  = scoreColor(r.score||0);
+    const nc = NOTA[r.notation] || '#888';
+    const bw = Math.round((r.avg_retard||0)/mx*60);
+    return `<tr id="rrow_${i}" onclick="pickClientDetail('${r.client_code}',${i})">
+      <td style="color:var(--g400);font-size:11px">${i+1}</td>
+      <td><span class="ccode">${r.client_code||'—'}</span></td>
+      <td><span class="sc-chip" style="background:${c}1f;color:${c}">${r.score??'—'}</span></td>
+      <td><span class="nota-chip" style="background:${nc}1f;color:${nc}">${r.notation||'—'}</span></td>
+      <td><span class="dbadge ${r.decision||''}">${r.decision||'—'}</span></td>
+      <td><div class="rbar-wrap">
+        <div class="rbar" style="width:${bw}px"></div>
+        <span style="font-size:11px;color:var(--g500)">${r.avg_retard||0} j</span>
+      </div></td>
+      <td style="font-family:'Syne';font-size:12px;font-weight:700;color:var(--g500)">${(r.pd_pct||0).toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('mbody').innerHTML = `
+    <table class="rtable">
+      <thead><tr>
+        <th>#</th><th>Code client</th><th>Score</th><th>Notation</th>
+        <th>Décision</th><th>Retard moyen</th><th>PD %</th>
+      </tr></thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+  const nbC = rows.filter(r=>r.decision==='CONTENTIEUX').length;
+  const nbA = rows.filter(r=>r.decision==='ALERTE').length;
+  const nbS = rows.filter(r=>r.decision==='SURVEILLER').length;
+  const nbM = rows.filter(r=>r.decision==='MAINTENIR').length;
+  document.getElementById('mcnt').textContent = `${rows.length} clients`;
+  document.getElementById('mft').textContent  = `${rows.length} — ${nbC} contentieux · ${nbA} alertes · ${nbS} surveiller · ${nbM} maintenir`;
+}
+
+/* ── Sélection d'un client → panneau droite ───────────────── */
+let _activeDetailAbort = null;  // annule la requête précédente si l'utilisateur clique vite
+
+async function pickClientDetail(code, rowIdx){
+  // Annuler la requête précédente si elle est encore en cours
+  if(_activeDetailAbort){ _activeDetailAbort.abort(); }
+  _activeDetailAbort = new AbortController();
+  const signal = _activeDetailAbort.signal;
+
+  // surligner la ligne
+  document.querySelectorAll('.rtable tbody tr').forEach(r=>r.classList.remove('selected'));
+  const row = document.getElementById('rrow_'+rowIdx);
+  if(row) row.classList.add('selected');
+
+  const panel = document.getElementById('rp_detail');
+  panel.innerHTML = `<div class="dp-loading"><div class="mloader"></div>Chargement du scoring de <strong>${code}</strong>…</div>`;
+
+  try{
+    const r = await fetchWithAuth(`${API}/predict`, {
+      method:'POST', headers: authHeaders(),
+      body: JSON.stringify({client_code: code}),
+      signal
+    });
+    const j = await r.json();
+
+    // Vérifier que cette requête est toujours la plus récente
+    if(signal.aborted) return;
+
+    if(j.success && j.data){
+      renderListDetail(j.data, code);
+
+      // Synchronise score, notation et décision dans la ligne de liste
+      const rowEl = document.getElementById('rrow_'+rowIdx);
+      if(rowEl){
+        const NOTA = {AAA:'#3ec98b',AA:'#5ed79b',A:'#8fe0b6',BBB:'#89B4E8',BB:'#f5a623',B:'#f0832a',CCC:'#ef4b4b'};
+        const scoreColor = s=>s>=800?'#3ec98b':s>=650?'#8fe0b6':s>=500?'#89B4E8':s>=350?'#f5a623':'#ef4b4b';
+        const sc = rowEl.querySelector('.sc-chip');
+        if(sc && j.data.score!=null){
+          const c=scoreColor(j.data.score);
+          sc.style.background=c+'1f'; sc.style.color=c; sc.textContent=j.data.score;
+        }
+        const nc2 = NOTA[j.data.notation]||'#888';
+        const nota = rowEl.querySelector('.nota-chip');
+        if(nota && j.data.notation){
+          nota.style.background=nc2+'1f'; nota.style.color=nc2; nota.textContent=j.data.notation;
+        }
+        const badge = rowEl.querySelector('.dbadge');
+        if(badge && j.data.decision){
+          badge.className='dbadge '+j.data.decision; badge.textContent=j.data.decision;
+        }
+      }
+      loadSHAPInPanel(code);
+      loadPayHistInPanel(code);
+    } else {
+      panel.innerHTML = `<div class="dp-loading" style="color:var(--danger)">${j.message||'Client introuvable.'}</div>`;
+    }
+  }catch(e){
+    if(e.name==='AbortError') return;  // clic annulé volontairement, ne rien afficher
+    panel.innerHTML = `<div class="dp-loading" style="color:var(--danger)">Erreur réseau.</div>`;
+  }
+}
+
+function renderListDetail(data, code){
+  const {score, notation, decision, pd_value:pd, threshold:thr,
+         indicateurs:inds={}, recommandations=[]} = data;
+  const color = scoreColor(score);
+  const NOTA = {AAA:'#3ec98b',AA:'#5ed79b',A:'#8fe0b6',BBB:'#89B4E8',BB:'#f5a623',B:'#f0832a',CCC:'#ef4b4b'};
+  const nc = NOTA[notation]||'#888';
+  const pct = Math.max(0,Math.min(1,score/1000));
+
+  // ticks de jauge (simplifié, 30 ticks)
+  const CX=120,CY=120,R=90,startA=Math.PI,endA=2*Math.PI;
+  let ticks='';
+  for(let i=0;i<=30;i++){
+    const tp=i/30;
+    const a=startA+(endA-startA)*tp;
+    const x1=CX+R*Math.cos(a), y1=CY+R*Math.sin(a);
+    const x2=CX+(R-14)*Math.cos(a), y2=CY+(R-14)*Math.sin(a);
+    const op = tp<=pct ? '1' : '0.12';
+    ticks+=`<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="${op}"/>`;
+  }
+
+  // KPIs
+  const KPI_KEYS = {
+    taux_paiement:  {lbl:'Taux paiement',    fmt:v=>v+'%'},
+    taux_retard:    {lbl:'Retard moy. M3',   fmt:v=>parseFloat(v)>90?'>90 j':(parseFloat(v)===0?'0 j':parseFloat(v).toFixed(0)+' j')},
+    score_bureau:   {lbl:'Score bureau',     fmt:v=>v},
+    pression_fin:   {lbl:'Pression fin.',    fmt:v=>v},
+    retard_externe: {lbl:'Retard ext.',      fmt:v=>parseFloat(v)>90?'>90 j':v+' j'},
+    recouvrement:   {lbl:'Recouvrement',     fmt:v=>v},
+  };
+  let kpiHtml = '';
+  for(const k in KPI_KEYS){
+    const v = inds[k];
+    if(!v) continue;
+    const cfg = KPI_KEYS[k];
+    const ok  = v.status==='OK';
+    kpiHtml += `<div class="dp-kpi">
+      <div class="dp-kpi-val" style="color:${ok?'var(--ok)':'var(--danger)'}">${cfg.fmt(v.valeur)}</div>
+      <div class="dp-kpi-lbl">${cfg.lbl}</div>
+    </div>`;
+  }
+
+  // recommandations
+  const decColors = {CONTENTIEUX:'var(--danger)',ALERTE:'var(--warn)',SURVEILLER:'var(--sky)',MAINTENIR:'var(--ok)'};
+  const dotColor = decColors[decision]||'var(--g400)';
+  let recoHtml = recommandations.length
+    ? recommandations.map(r=>`<div class="dp-reco-item">
+        <div class="dp-reco-dot" style="background:${dotColor}"></div>
+        <span>${r}</span>
+      </div>`).join('')
+    : '<div style="font-size:12px;color:var(--g400);padding:8px 0">Aucune recommandation disponible.</div>';
+
+  document.getElementById('rp_detail').innerHTML = `
+  <div class="dp-wrap">
+    <div class="dp-topbar">
+      <div class="dp-code">Client ${code}</div>
+      <span class="dbadge ${decision}" style="margin-left:10px">${decision}</span>
+      <button onclick="closeModal();document.getElementById('cc').value='${code}';go();"
+        style="margin-left:auto;padding:6px 16px;background:var(--navy);color:#fff;border:none;
+               border-radius:12px;font-size:12px;font-family:'Syne';font-weight:700;cursor:pointer;">
+        Ouvrir la fiche
+      </button>
+    </div>
+
+    <div class="dp-gauge-card">
+      <div class="dp-gauge-wrap">
+        <svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg">${ticks}</svg>
+        <div class="dp-gauge-center">
+          <div class="dp-score" style="color:${color}">${score}</div>
+          <div class="dp-denom">/1000</div>
+        </div>
+      </div>
+      <div class="dp-foot">
+        <div class="dp-fi"><div class="dp-fv" style="color:${nc}">${notation}</div><div class="dp-fl">Notation</div></div>
+        <div class="dp-fi"><div class="dp-fv">${(pd*100).toFixed(2)}%</div><div class="dp-fl">Prob. défaut</div></div>
+        <div class="dp-fi"><div class="dp-fv">${(thr*100).toFixed(1)}%</div><div class="dp-fl">Seuil</div></div>
+      </div>
+      <div class="dp-dec-band ${decision}" style="margin-top:8px">
+        <span style="font-size:14px">
+          ${decision==='CONTENTIEUX'?'⛔':decision==='ALERTE'?'⚠️':decision==='SURVEILLER'?'👁':'✓'}
+        </span>
+        ${decision}
+      </div>
+    </div>
+
+    ${kpiHtml ? `<div><div class="dp-section-title">Indicateurs clés</div><div class="dp-kpi-grid">${kpiHtml}</div></div>` : ''}
+
+    <div class="dp-xai" id="dp_xai">
+      <div class="dp-section-title">Facteurs explicatifs (SHAP)</div>
+      <div id="dp_xai_body" style="color:var(--g400);font-size:12px">Calcul en cours…</div>
+    </div>
+
+    <div class="dp-pay" id="dp_pay" style="display:none">
+      <div class="dp-section-title">Historique de paiement</div>
+      <div class="dp-pay-scroll"><div id="dp_pay_grid"></div></div>
+    </div>
+
+    <div class="dp-reco">
+      <div class="dp-section-title">Recommandations</div>
+      ${recoHtml}
+    </div>
+  </div>`;
+}
+
+async function loadSHAPInPanel(code){
+  try{
+    const r = await fetchWithAuth(`${API}/explain/shap?top_n=6`,{
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({client_code:code})
+    });
+    const j = await r.json();
+    const box = document.getElementById('dp_xai_body');
+    if(!box) return;
+    if(!j.success){ box.textContent='Explication indisponible.'; return; }
+    const vals = j.data.shap_values||[];
+    const maxV = Math.max(...vals.map(v=>Math.abs(v.impact||v.shap_value||0)),0.001);
+    box.innerHTML = vals.map(v=>{
+      const risk = v.direction==='risque';
+      const pct  = Math.round(Math.abs(v.impact||v.shap_value||0)/maxV*100);
+      return `<div class="frow">
+        <span class="frow-lbl" title="${v.feature}">${v.feature}</span>
+        <div class="frow-track"><div class="frow-fill ${risk?'risk':'prot'}" style="width:${pct}%"></div></div>
+        <span class="frow-tag ${risk?'risk':'prot'}">${risk?'Risque':'Protection'}</span>
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
+
+async function loadPayHistInPanel(code){
+  try{
+    const r = await fetchWithAuth(`${API}/historique-paiements?client_code=${encodeURIComponent(code)}`,{
+      headers: authHeaders()
+    });
+    const j = await r.json();
+    const card = document.getElementById('dp_pay');
+    const grid = document.getElementById('dp_pay_grid');
+    if(!card||!grid) return;
+    if(!j.success||!j.data.annees||!j.data.annees.length){ card.style.display='none'; return; }
+    card.style.display='block';
+    const {annees} = j.data;
+    let html = '<span></span>'+MOIS_LBL.map(m=>`<span class="pay-month-lbl">${m}</span>`).join('');
+    annees.slice().reverse().forEach(an=>{
+      html += `<span class="pay-year-lbl">${an.annee}</span>`;
+      an.mois.forEach(m=>{
+        if(m.statut==='ok')      html+=`<div class="pay-dot ok">${ICON_OK}</div>`;
+        else if(m.statut==='late') html+=`<div class="pay-dot late">${ICON_LATE}</div>`;
+        else                       html+=`<div class="pay-dot vide"></div>`;
+      });
+    });
+    grid.className='pay-grid';
+    grid.innerHTML=html;
+  }catch(e){}
+}
+function exportCSV(){
+  const rows = riskFilt==='all' ? riskAll : riskAll.filter(r=>r.decision===riskFilt);
+  const hdr  = 'ClientCode,Score,Notation,Decision,Retard(j),PD(%),Credit(DT)\n';
+  const body = rows.map(r=>
+    `${r.client_code},${r.score},${r.notation},${r.decision},${r.avg_retard||0},${(r.pd_pct||0).toFixed(3)},${r.montant_credit||0}`
+  ).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([hdr+body], {type:'text/csv;charset=utf-8;'}));
+  a.download = 'risque_clients.csv';
+  a.click();
+}
+
+const MOIS_LBL = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+
+const ICON_OK   = '<svg viewBox="0 0 24 24" fill="none" stroke="#3ec98b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const ICON_LATE = '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4b4b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+
+async function loadPaymentHistory(code){
+  const card = document.getElementById('pay_card');
+  card.style.display = 'block';
+  document.getElementById('pay_sub').textContent = 'Chargement…';
+  document.getElementById('pay_grid').innerHTML = '';
+  try{
+    const r = await fetch(`${API}/historique-paiements?client_code=${encodeURIComponent(code)}`, {
+      headers: getToken() ? {'Authorization':'Bearer '+getToken()} : {}
+    });
+    const j = await r.json();
+    if(!j.success || !j.data.annees || !j.data.annees.length){
+      card.style.display = 'none';
+      return;
+    }
+    const {annees, taux_paiement_pct} = j.data;
+    document.getElementById('pay_sub').textContent =
+      taux_paiement_pct!=null
+        ? `${taux_paiement_pct}% des échéances payées à temps sur l'historique disponible`
+        : 'Historique des échéances mensuelles';
+
+    const grid = document.getElementById('pay_grid');
+    let cellsHtml = '<span></span>' + MOIS_LBL.map(m=>`<span class="pay-month-lbl">${m}</span>`).join('');
+
+    annees.slice().reverse().forEach(an=>{
+      cellsHtml += `<span class="pay-year-lbl">${an.annee}</span>`;
+      an.mois.forEach(m=>{
+        if(m.statut==='ok')
+          cellsHtml += `<div class="pay-dot ok">${ICON_OK}</div>`;
+        else if(m.statut==='late')
+          cellsHtml += `<div class="pay-dot late">${ICON_LATE}</div>`;
+        else
+          cellsHtml += `<div class="pay-dot none"></div>`;
+      });
+    });
+    grid.innerHTML = cellsHtml;
+  }catch{
+    card.style.display = 'none';
+  }
+}
+
+/* ─── EXPORT FICHE CLIENT (impression -> PDF) ─── */
+/* ─── RECOMMANDATION IA (à la demande) ─── */
+async function loadRecoIA(){
+  const code = document.getElementById('cc').value.trim();
+  if(!code) return;
+  const btn = document.getElementById('btn_ia');
+  const box = document.getElementById('reco_ia_box');
+  const txt = document.getElementById('reco_ia_text');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyse en cours…';
+  box.style.display = 'block';
+  txt.innerHTML = `<div class="reco-empty">Génération de la recommandation par l'IA…</div>`;
+
+  try{
+    const r = await fetchWithAuth(`${API}/recommandation-ia`, {
+      method:'POST', headers:authHeaders(),
+      body: JSON.stringify({client_code: code})
+    });
+    const j = await r.json();
+    if(j.success && j.data.recommandation_ia && j.data.recommandation_ia.length){
+      txt.innerHTML = j.data.recommandation_ia.map(item => `
+        <div class="reco-item">
+          <span class="reco-prio IA">IA</span>
+          <span class="reco-text">
+            ${item.titre ? `<strong>${item.titre}</strong> — ` : ''}${item.detail}
+          </span>
+        </div>`).join('');
+    } else {
+      txt.innerHTML = `<div class="reco-empty">${j.message || 'Service IA indisponible pour le moment.'}</div>`;
+    }
+  }catch{
+    txt.innerHTML = `<div class="reco-empty">Impossible de contacter le service IA.</div>`;
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L15 9 L22 9 L16.5 13.5 L18.5 21 L12 16.5 L5.5 21 L7.5 13.5 L2 9 L9 9 Z"/></svg> Approfondir avec l'IA`;
+  }
+}
+
+function exportFiche(){
+  const code = document.getElementById('cc').value.trim() || document.getElementById('g_code').textContent;
+  const nota = document.getElementById('g_nota').textContent;
+  const dec  = document.getElementById('g_dec').textContent;
+  const score= document.getElementById('g_score').textContent;
+  const pd   = document.getElementById('g_pd').textContent;
+  const date = new Date().toLocaleString('fr-FR');
+
+  const decColor = dec==='CONTENTIEUX' ? '#ef4b4b' : dec==='ALERTE' ? '#f5a623'
+                 : dec==='SURVEILLER' ? '#152247' : '#3ec98b';
+
+  const kpiHtml = Array.from(document.querySelectorAll('#kpi_grid .kpi-card')).map(card=>{
+    const name = card.querySelector('.kpi-name')?.textContent || '';
+    const val  = card.querySelector('.kpi-val')?.textContent || '';
+    const badge= card.querySelector('.kpi-badge')?.textContent || '';
+    return `<tr><td style="padding:8px 0;color:#444">${name}</td>
+      <td style="padding:8px 0;font-weight:700;text-align:right">${val}</td>
+      <td style="padding:8px 0;text-align:right;color:#888;font-size:11px">${badge}</td></tr>`;
+  }).join('');
+
+  const shapHtml = Array.from(document.querySelectorAll('#xs_bars .frow')).map(row=>{
+    const lbl = row.querySelector('.frow-lbl')?.textContent || '';
+    const tag = row.querySelector('.frow-tag')?.textContent || '';
+    return `<tr><td style="padding:6px 0;color:#444">${lbl}</td>
+      <td style="padding:6px 0;text-align:right;font-size:12px">${tag}</td></tr>`;
+  }).join('');
+
+  const shapNote = document.getElementById('xs_sub')?.textContent || '';
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><meta charset="utf-8"><title>Fiche ${code}</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#152247;padding:40px;max-width:680px;margin:0 auto;}
+      h1{font-size:20px;margin-bottom:4px;}
+      .sub{color:#888;font-size:12px;margin-bottom:24px;}
+      .score-box{background:#f4f6fb;border-radius:14px;padding:24px;margin-bottom:24px;
+        display:flex;align-items:center;justify-content:space-between;}
+      .score-num{font-size:46px;font-weight:800;}
+      .badges{text-align:right;}
+      .badge-dec{font-size:16px;font-weight:800;color:${decColor};}
+      .badge-nota{font-size:13px;color:#888;}
+      table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+      h2{font-size:14px;border-bottom:1px solid #eee;padding-bottom:8px;margin-top:28px;}
+      .note{font-size:12px;color:#666;line-height:1.6;margin-bottom:12px;}
+      .footer{margin-top:30px;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:12px;}
+      @media print{ body{padding:20px;} }
+    </style></head><body>
+      <h1>Fiche scoring comportemental</h1>
+      <div class="sub">Client ${code} — généré le ${date}</div>
+
+      <div class="score-box">
+        <div>
+          <div class="score-num">${score}<span style="font-size:16px;color:#aaa">/1000</span></div>
+        </div>
+        <div class="badges">
+          <div class="badge-dec">${dec}</div>
+          <div class="badge-nota">Notation ${nota} — PD ${pd}</div>
+        </div>
+      </div>
+
+      <h2>Indicateurs clés</h2>
+      <table>${kpiHtml}</table>
+
+      <h2>Facteurs explicatifs (SHAP)</h2>
+      <div class="note">${shapNote}</div>
+      <table>${shapHtml}</table>
+
+      <div class="footer">NextCredit — Document généré automatiquement, à usage interne uniquement.</div>
+    </body></html>
+  `);
+  win.document.close();
+  setTimeout(()=>win.print(), 300);
+}
+
+renderHist();
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') closeModal();
+});
+</script>
+</body>
+</html>

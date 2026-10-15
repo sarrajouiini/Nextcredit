@@ -1,0 +1,22 @@
+# Dependencies / build output
+node_modules/
+dist/
+.angular/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+
+# Regenerable / runtime data
+backend/chroma_db/
+backend/history/
+backend/data/
+
+# Editor / tool configs
+.vscode/
+*.log
